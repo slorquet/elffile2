@@ -5,7 +5,7 @@ syntax: glob
 .svn
 TAGS
 distribute-*.tar.gz
-doc/build
+docs/build
 elf32-examples
 elf64-examples
 elffile-dev
