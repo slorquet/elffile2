@@ -3,7 +3,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <30-Dec-2010 13:50:11 PST by rich@noir.com>
+# Time-stamp: <30-Dec-2010 14:02:49 PST by rich@noir.com>
 
 # FIXME: is there a way to force dependencies to be installed before
 # building through distutils/setuptools/distribute?  Akin to "apt-get
@@ -73,8 +73,8 @@ ${python}: #.stamp-virtualenv
 	#sudo apt-get install --yes ${DEBIANS}
 	touch $@-new && mv $@-new $@
 
-clean:
-	rm -rf ${venv} .stamp-virtualenv .stamp-apt build dist ${packagename}.egg-info ${packagename}/*.pyc apidocs *.egg *.pyc docs/build distribute-*.tar.gz
+clean: clean_docs
+	rm -rf ${venv} .stamp-virtualenv .stamp-apt build dist ${packagename}.egg-info ${packagename}/*.pyc apidocs *.egg *.pyc distribute-*.tar.gz
 
 .PHONY: check
 check: ${python} ${nose_egg}
@@ -114,9 +114,10 @@ bdist_egg: ${ve}
 doctrigger = docs/build/html/index.html
 
 .PHONY: docs
-docs: ${doctrigger}
+docs: ${doctrigger} ${coding_egg}
+clean_docs:; (cd docs && $(MAKE) clean)
 
-${doctrigger}: ${sphinx_egg} docs/source/index.rst ${packagename}.py
+${doctrigger}: ${sphinx_egg} docs/source/index.rst ${packagename}.py docs/source/conf.py
 	(cd docs && $(MAKE) html)
 
 .PHONY: install
