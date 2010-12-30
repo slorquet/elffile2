@@ -211,7 +211,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'coding', u'Coding Documentation',
+    ('index', 'elffile', u'Elffile Documentation',
      [u'K Richard Pixley'], 1)
 ]
 
@@ -219,7 +219,7 @@ man_pages = [
 # -- Options for Epub output ---------------------------------------------------
 
 # Bibliographic Dublin Core info.
-epub_title = u'Coding'
+epub_title = u'elffile'
 epub_author = u'K Richard Pixley'
 epub_publisher = u'K Richard Pixley'
 epub_copyright = u'2010, K Richard Pixley'
@@ -261,3 +261,5 @@ intersphinx_mapping = {
     'coding': ('http://packages.python.org/coding', None),
     'python': ('http://docs.python.org', None),
     }
+
+todo_include_todos = True
