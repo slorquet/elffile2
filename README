@@ -1,0 +1,4 @@
+Welcome to elffile!
+
+Elffile is a pure python implementation of a library which reads and
+writes ELF format object files.

@@ -1,0 +1,13 @@
+syntax: glob
+
+*.pyc
+*~
+.svn
+TAGS
+distribute-*.tar.gz
+doc/build
+elf32-examples
+elf64-examples
+elffile-dev
+elffile.egg-info
+stamp-*
