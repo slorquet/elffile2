@@ -3,7 +3,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <30-Dec-2010 19:17:03 PST by rich@noir.com>
+# Time-stamp: <30-Dec-2010 19:24:35 PST by rich@noir.com>
 
 # FIXME: is there a way to force dependencies to be installed before
 # building through distutils/setuptools/distribute?  Akin to "apt-get
@@ -117,7 +117,13 @@ doctrigger = docs/build/html/index.html
 docs: ${doctrigger} develop
 clean_docs:; (cd docs && $(MAKE) clean)
 
-${doctrigger}: ${sphinx_egg} docs/source/index.rst ${packagename}.py docs/source/conf.py
+docsrcdir := docs/source
+docfiles := \
+	${docsrcdir}/index.rst \
+	${docsrcdir}/conf.py \
+	${docsrcdir}/reference.rst \
+
+${doctrigger}: ${sphinx_egg} ${packagename}.py ${docfiles}
 	(cd docs && $(MAKE) html)
 
 .PHONY: install
