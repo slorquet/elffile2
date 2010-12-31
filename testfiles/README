@@ -1,0 +1,13 @@
+This is tricky.  I need some example object files in order to run
+reasonable tests.  However, if I use GPL code, then I also need to
+ship the source for that object.  I can't just build the object I need
+at test time because no single build machine is likely to have all of
+the cross compilers I'd need to do so.
+
+What exists here is some trivial code which I am releasing into the
+public domain.  If you have access to an ELF producing tool chain
+which is not yet represented here, please build this code and either
+commit or ship me the results so that I can incorporate them into
+these tests.
+
+K. Richard Pixley, <rich@noir.com>
