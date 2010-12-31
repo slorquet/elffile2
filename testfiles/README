@@ -10,4 +10,14 @@ which is not yet represented here, please build this code and either
 commit or ship me the results so that I can incorporate them into
 these tests.
 
+The easiest way to do this is as follows:
+
+    mkdir `./config.guess`
+    (cd `./config.guess` && ../configure && make)
+
+You can add them to mercurial using:
+
+    hg add `./config.guess`
+    
+
 K. Richard Pixley, <rich@noir.com>

@@ -11,3 +11,4 @@ elf64-examples
 elffile-dev
 elffile.egg-info
 stamp-*
+testfiles/autom4te.cache
