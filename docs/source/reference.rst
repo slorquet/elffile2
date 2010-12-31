@@ -5,7 +5,7 @@
 Overview
 ========
 
-The beginning is :py:function:`open` which examines the beginning of
+The beginning is :py:func:`open` which examines the beginning of
 the file and returns an instance of :py:class:`ElfFile`.
 :py:class:`ElfFile` isn't intended for direct instantiation so what's
 actually returned is an instance of one of the subclasses.  There are
