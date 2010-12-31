@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <31-Dec-2010 12:38:20 PST by rich@noir.com>
+# Time-stamp: <31-Dec-2010 14:30:49 PST by rich@noir.com>
 
 """
 Tests for elffile.
@@ -25,29 +25,33 @@ import os
 
 import elffile
 
-# def testElfFileIdent():
-#     for filename in glob.glob(os.path.join('..', 'elf32-examples', '*')) + glob.glob(os.path.join('..', 'elf64-examples', '*')):
-#         with open(filename, 'rb') as f:
-#             content = f.read()
+def testElfFileIdent():
+    for filename in (glob.glob(os.path.join('testfiles', '*', '*.o'))
+                     + glob.glob(os.path.join('testfiles', '*', '*', '*.o'))
+                     + glob.glob(os.path.join('testfiles', '*', '*.so*'))
+                     + glob.glob(os.path.join('testfiles', '*', '*', '*.so*'))
+                     + glob.glob(os.path.join('testfiles', '*', 'hello'))):
+        with open(filename, 'rb') as f:
+            content = f.read()
 
-#         efi = elffile.ElfFileIdent()
-#         efi.unpack(content)
-#         print(efi, file=sys.stderr)
-#         newcontent = bytearray(elffile.EI_NIDENT)
-#         efi.pack(newcontent)
+        efi = elffile.ElfFileIdent()
+        efi.unpack(content)
+        print(efi, file=sys.stderr)
+        newcontent = bytearray(elffile.EI_NIDENT)
+        efi.pack(newcontent)
 
-#         # if content != newcontent:
-#         #     print('len(content) = {0}, len(newcontent) = {1}'.format(len(content), len(newcontent)))
+        # if content != newcontent:
+        #     print('len(content) = {0}, len(newcontent) = {1}'.format(len(content), len(newcontent)))
 
-#         #     for i in xrange(len(content)):
-#         #         if content[i] != newcontent[i]:
-#         #             print('differs at char {0}: {1} != {2}'.format(i, content[i], newcontent[i]))
+        #     for i in xrange(len(content)):
+        #         if content[i] != newcontent[i]:
+        #             print('differs at char {0}: {1} != {2}'.format(i, content[i], newcontent[i]))
 
-#         content.startswith(newcontent)
+        content.startswith(newcontent)
 
-#         efi2 = elffile.ElfFileIdent()
-#         efi2.unpack(str(newcontent))
-#         assert_equal(efi, efi2)
+        efi2 = elffile.ElfFileIdent()
+        efi2.unpack(str(newcontent))
+        assert_equal(efi, efi2)
 
 def testFileEncoding():
     for i in elffile._fileEncodingDict:
