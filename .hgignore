@@ -1,14 +1,24 @@
 syntax: glob
 
+*.Plo
+*.Po
+*.la
+*.lai
+*.lo
 *.pyc
 *~
 .svn
+Makefile
 TAGS
+config.log
+config.status
 distribute-*.tar.gz
 docs/build
 elf32-examples
 elf64-examples
 elffile-dev
 elffile.egg-info
+libtool
+lt-hello
 stamp-*
 testfiles/autom4te.cache
