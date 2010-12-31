@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <30-Dec-2010 19:04:41 PST by rich@noir.com>
+# Time-stamp: <30-Dec-2010 19:06:06 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
