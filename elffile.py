@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <30-Dec-2010 20:14:05 PST by rich@noir.com>
+# Time-stamp: <30-Dec-2010 20:45:23 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -143,7 +143,7 @@ class ElfFileIdent(object):
 
     magic = None
     """
-    The magic number which should be '\x1fELF' for all ELF format files. 
+    The magic 'number' which should be '\x1fELF' for all ELF format files. 
     """
 
     elfClass = None
@@ -185,7 +185,7 @@ class ElfFileIdent(object):
             which to start unpacking
         """
         (self.magic, self.elfClass, self.elfData, self.fileVersion, self.osabi,
-         self.abiversion) = identCoder.unpack_from(block, offset)
+         self.abiversion) = self.coder.unpack_from(block, offset)
 
     def pack(self, block, offset=0):
         """
@@ -195,7 +195,24 @@ class ElfFileIdent(object):
         :param int offset: optional offset into the memory block into
             which to start packing
         """
-        identCoder.pack_into(block, offset, self.magic, self.elfClass, self.elfData, self.fileVersion, self.osabi, self.abiversion)
+        self.coder.pack_into(block, offset, self.magic, self.elfClass, self.elfData, self.fileVersion, self.osabi, self.abiversion)
+
+    def __repr__(self):
+        return ('<{0}: coder={1}, magic={2}, elfClass={3}, elfData={4}, fileVersion={5}, osabi={6}, abiversion={7}>'
+                .format(self.__class__.__name__, self.coder, self.magic, self.elfClass,
+                        self.elfData, self.fileVersion, self.osabi, self.abiversion))
+
+    def __eq__(self, other):
+        return (self.coder == other.coder
+                and self.magic == other.magic
+                and self.elfClass == other.elfClass
+                and self.elfData == other.elfData
+                and self.fileVersion == other.fileVersion
+                and self.osabi == other.osabi
+                and self.abiversion == other.abiversion)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 class ElfClass(coding.Coding):
     """
@@ -238,8 +255,8 @@ EV('EV_CURRENT', 1, 'Current version')
 
 class ElfOsabi(coding.Coding):
     """
-    Encodes OSABI values which roughly represent operating systems as
-    from the `'ident' portion of the elf file header
+    Encodes OSABI values which represent operating system ELF format
+    extensions as from the `'ident' portion of the elf file header
     <http://www.sco.com/developers/gabi/latest/ch4.eheader.html#elfid>`_.
 
     This is a subclass of :py:class:`coding.Coding` which codes :py:attr:`ElfFileIdent.osabi`.
