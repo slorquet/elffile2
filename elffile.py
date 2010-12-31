@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <30-Dec-2010 13:33:21 PST by rich@noir.com>
+# Time-stamp: <30-Dec-2010 19:04:41 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -34,7 +34,8 @@ import coding
 
 class ElfClass(coding.Coding):
     """
-    Encodes the word size of the elf file.  This is a subclass of :py:class:`coding.Coding`.
+    Encodes the word size of the elf file as from the elf file header.
+    This is a subclass of :py:class:`coding.Coding`.
     """
     bycode = byname = {}
 
@@ -44,7 +45,10 @@ ElfClass('ELFCLASS64', 2, '64-bit objects')
 
 class ElfData(coding.Coding):
     """
-    Encodes the byte-wise endianness of the elf file.
+
+    Encodes the byte-wise endianness of the elf file as from the elf
+    file header.  This is a subclass of :py:class:`coding.Coding`.
+
     """
     bycode = byname = {}
 
@@ -54,7 +58,8 @@ ElfData('ELFDATA2MSB', 2, 'most significant byte first')
 
 class EV(coding.Coding):
     """
-    Encodes the elf file format version of this elf file.
+    Encodes the elf file format version of this elf file as from the
+    elf file header.  This is a subclass of :py:class:`coding.Coding`.
     """
     bycode = byname = {}
 
@@ -63,7 +68,9 @@ EV('EV_CURRENT', 1, 'Current version')
 
 class ElfOsabi(coding.Coding):
     """
-    Encodes OSABI values which roughly represent operating systems.
+    Encodes OSABI values which roughly represent operating systems as
+    from the elf file header.  This is a subclass of
+    :py:class:`coding.Coding`.
     """
     bycode = byname = {}
 
@@ -85,7 +92,8 @@ ElfOsabi('ELFOSABI_FENIXOS', 16, 'The FenixOS highly scalable multi-core OS')
 
 class ET(coding.Coding):
     """
-    Encodes the type of this elf file, (relocatable, executable, shared library, etc.)
+    Encodes the type of this elf file, (relocatable, executable,
+    shared library, etc.)
     """
     bycode = byname = {}
 
@@ -306,7 +314,6 @@ SHT('SHT_HIUSER', 0xffffffff, '')
 class SHF(coding.Coding):
     bycode = byname = {}
 
-
 SHF('SHF_WRITE', 0x1, 'section contains data that should be writable during process execution')
 SHF('SHF_ALLOC', 0x2, 'section occupies memory during process execution')
 SHF('SHF_EXECINSTR', 0x4, 'section contains executable machine instructions')
@@ -356,24 +363,26 @@ EI_NIDENT = 16
 
 class ElfFileIdent(object):
     """
-    Corresponds to the first, byte-endian-independent, values in an
-    elf file.  These tell us about the encodings for the rest of the
-    file.
+    This class corresponds to the first, byte-endian-independent,
+    values in an elf file.  These tell us about the encodings for the
+    rest of the file.  This is the *e_ident* field of the elf file
+    header in the format specifications.
     """
 
     coder = struct.Struct(b'=4sBBBBBxxxxxxx')
     """
-    (6 results):
-    '\x1fELF', (Elf file magic number)
-    ElfClass (32 vs 64-bit)
-    ElfData (endianness)
-    EV (file version)
-    ElfOsabi (operating system)
-    abiversion
+    The (de)coder for this struct involves six fields:
+    * '\x1fELF', (Elf file magic number)
+    * ElfClass (32 vs 64-bit)
+    * ElfData (endianness)
+    * EV (file version)
+    * ElfOsabi (operating system)
+    * abiversion
     """
-    # size is EI_IDENT
-    assert (coder.size == EI_NIDENT), 'coder.size = {0}({0}), EI_NIDENT = {0}({0})'.format(coder.size, type(coder.size), EI_NIDENT, type(EI_NIDENT))
 
+    # size is EI_IDENT
+    assert (coder.size == EI_NIDENT), 'coder.size = {0}({0}), EI_NIDENT = {0}({0})'.format(coder.size, type(coder.size),
+                                                                                           EI_NIDENT, type(EI_NIDENT))
 
     def __init__(self):
         self.magic = None
@@ -530,43 +539,79 @@ class ElfProgramHeader64l(ElfProgramHeader64):
 
 def open(name=None, fileobj=None, map=None, block=None, mode='r', use_map=True):
     """
-    We can open any of four different forms.  1) a file name, 2) a
-    file object, 3) an mmap object, 4) a block of memory.  If use_mmap
-    is True, then we will use the mmap object as our memory block.
-    This uses a file descriptor but is faster.  If use_mmap is False,
-    the mmap content will be copied in memory and the descriptor
-    closed during initialization.
+    :param string name: a file name
+    :param file fileobj: a file object, (if given, this overrides *name*)
+    :param mmap.mmap map: a :py:class:`mmap.mmap`, (if given, this overrides *fileobj*)
+    :param string block: file info in a block of memory, (if given, this overrides *map*)
+    :param string mode: must be 'r' for read
+    :param bool use_mmap: if True, then use map in place.  If False, the copy the file contents from map to block.
 
-    In all read cases except use_mmap, the file is copied into memory
-    and the descriptor closed.
+    The open function takes some form of file identifier, reads the
+    first few bytes, (:py:class:`ElfFileIdent`), to determine whether
+    the file is 32-bit or 64-bit encoded and whether it is big or
+    little endian.  Based on this information it initializes an
+    instance of the appropriate class, :py:class:`ElfFile32b`,
+    :py:class:`ElfFile32l`, :py:class:`ElfFile64b`,
+    :py:class:`ElfFile64l`, respectively, each of which are subclasses
+    of the :py:class:`ElfFile` class.
+
+    The file to be opened can be specified in any of four different forms:
+
+    #. a file name
+    #. :py:class:`file` object
+    #. :py:mod:`mmap.mmap`, or
+    #. a block of memory
+
+    If an :py:class:`mmap.mmap` object is specified then any file
+    object or file name specified are ignored.  Instead, those values
+    are initialized from the :py:class:`mmap.mmap` object.
+
+    If no :py:class:`mmap.mmap` object is specified and a file object
+    is specified then any file name specified is ignored.  Instead,
+    that value is initialized from the :py:class:`file` object and mmap'd.
+
+    IF no :py:class:`mmap.mmap` object and no :py:class:`file` object
+    are specified then the file name will be opened and mapped.
+
+    If use_mmap is :py:const:`True`, then we will use the mmap object
+    as our memory block.  This uses a file descriptor but is faster as
+    it eliminates an extra memory-to-memory copy.  If *use_mmap* is
+    :py:const:`False`, the mmap content is copied into process memory
+    and the file descriptor is closed.
+
+    In all read cases except when *use_mmap* is :py:const:`True` the
+    file is copied into memory and the descriptor closed before this
+    function returns.
     
-    For now, can only read.
+    .. todo:: add write support.
     """
 
-    assert prefer_mmap
+    assert use_mmap
     assert mode == 'r'
 
-    assert name is not None
+    if block:
+        fileIdent = ElfFileIdent().unpack(block)
+        return ElfFile.encodedClass(fileIdent)(name, fileobj, map, block, mode, fileIdent)
 
-    if fileobj is None:
-        fileobj = open(name, 'rb')
-
-    if map is None:
-        map = mmap.mmap(fileobj.fd.fileno(), 0, mmap.MAP_SHARED, mmap.PROT_READ)
-
-    if block is None:
+    if map:
         if use_map:
             block = map
         else:
             block = map[:]
+            map.close()
 
-    if not use_map:
-        fileobj.close()
-        fileobj = None
+    elif fileobj:
+        map = mmap.mmap(fileobj.fd.fileno(), 0, mmap.MAP_SHARED, mmap.PROT_READ)
 
-    fileIdent = ElfFileIdent().unpack(block)
+    elif name:
+        fileobj = open(name, 'rb')
 
-    return ElfFile.encodedClass(fileIdent)(name, fileobj, map, block, map, use_map, fileIdent)
+    else:
+        assert False
+        
+    return __name__.open(name, fileobj, map, block, mode, use_map)
+
+### MARKER
 
 class ElfFile(object):
     @staticmethod
@@ -585,13 +630,12 @@ class ElfFile(object):
 
     fileHeaderClass = None
 
-    def __init__(self, name, fileobj, map, block, mode, use_map, fileIdent=None):
+    def __init__(self, name, fileobj, map, block, mode, fileIdent=None):
         self.name = name
         self.fileobj = fileobj
         self.map = map
         self.block = block
         self.mode = mode
-        self.use_map = use_map
 
         self.fileIdent = fileIdent
         self.fileHeader = None
