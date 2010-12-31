@@ -3,7 +3,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <30-Dec-2010 14:02:49 PST by rich@noir.com>
+# Time-stamp: <30-Dec-2010 19:17:03 PST by rich@noir.com>
 
 # FIXME: is there a way to force dependencies to be installed before
 # building through distutils/setuptools/distribute?  Akin to "apt-get
@@ -92,7 +92,7 @@ bdist: ${ve}
 .PHONY: develop
 develop: ${venv}/lib/${vpython}/site-packages/${packagename}.egg-link
 
-${venv}/lib/${vpython}/site-packages/${packagename}.egg-link: ${python}
+${venv}/lib/${vpython}/site-packages/${packagename}.egg-link: ${python} ${coding_egg} ${nose_egg}
 	${setuppy} develop
 
 .PHONY: bdist_upload
@@ -114,7 +114,7 @@ bdist_egg: ${ve}
 doctrigger = docs/build/html/index.html
 
 .PHONY: docs
-docs: ${doctrigger} ${coding_egg}
+docs: ${doctrigger} develop
 clean_docs:; (cd docs && $(MAKE) clean)
 
 ${doctrigger}: ${sphinx_egg} docs/source/index.rst ${packagename}.py docs/source/conf.py
@@ -125,7 +125,7 @@ install: ${python}
 	${setuppy} $@
 
 .PHONY: nosetests
-nosetests: ${python}
+nosetests: develop ${nose_egg}
 	${setuppy} $@
 
 .PHONY: test
