@@ -17,7 +17,6 @@ The easiest way to do this is as follows:
 
 You can add them to mercurial using:
 
-    hg add `./config.guess`
-    
+    (cd `./config.guess` && make add)
 
 K. Richard Pixley, <rich@noir.com>
