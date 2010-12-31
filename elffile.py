@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <30-Dec-2010 20:45:23 PST by rich@noir.com>
+# Time-stamp: <31-Dec-2010 12:36:58 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -76,8 +76,6 @@ def open(name=None, fileobj=None, map=None, block=None, mode='r', use_map=True):
     In all read cases except when *use_mmap* is :py:const:`True` the
     file is copied into memory and the descriptor closed before this
     function returns.
-    
-    .. todo:: add write support.
     """
 
     assert use_mmap
@@ -279,7 +277,267 @@ ElfOsabi('ELFOSABI_NSK', 14, 'Hewlett-Packard Non-Stop Kernel')
 ElfOsabi('ELFOSABI_AROS', 15, 'Amiga Research OS')
 ElfOsabi('ELFOSABI_FENIXOS', 16, 'The FenixOS highly scalable multi-core OS')
 
-### MARKER
+class ElfFile(object):
+    """
+    This class corresponds to an entire ELF format file.  It is an
+    abstract base class which is not intended to be instantiated by
+    rather subclassed.
+
+    This abstract base class works in tight concert with it's
+    subclasses: :py:class:`ElfFile32b`, :py:class:`ElfFile32l`,
+    :py:class:`ElfFile64b`, and :py:class:`ElfFile64l`.  This abstract
+    base class sets useless defaults and includes byte order and word
+    size independent methods while the subclasses define byte order
+    and word size dependent methods.
+    """
+
+    name = None
+    """
+    A :py:class:`str` containing the file name for this ELF format object file.
+    """
+
+    fileIdent = None
+    """
+    A :py:class:`ElfFileIdent` representing the :c:data:`e_ident` portion of the ELF format file header.
+    """
+
+    fileHeader = None
+    """
+    A :py:class:`ElfFileHeader` represeing the byte order and word size dependent portion of the ELF format file header.
+    """
+
+    sectionHeaders = None
+    """
+    A :py:class:`list` of section headers.  This corresponds to the section header table.
+    """
+
+    programHeaders = None
+    """
+    A :py:class:`list` of the program headers.  This corresponds to the program header table.
+    """
+
+    fileHeaderClass = None
+    """
+    Intended to be set by the subclasses.  Points to the byte order and word size sensitive
+    class to be used for the ELF file header. 
+    """
+
+    class NO_CLASS(Exception):
+        """
+        Raised when attempting to decode an unrecognized value for
+        :py:class:`ElfClass`, (that is, word size).
+        """
+        pass
+
+    class NO_ENCODING(Exception):
+        """
+        Raised when attempting to decode an unrecognized value for
+        :py:class:`ElfData`, (that is, byte order).
+        """
+
+    @staticmethod
+    def encodedClass(ident):
+        """
+        :param :py:class:`ElfFileIdent`:
+        :rtype :py:class:`ElfFile`:
+
+        Given an *ident*, return a suitable :py:class:`ElfFile` subclass to represent that file.
+
+        Raises :py:exc:`NO_CLASS` if the :py:class:`ElfClass`, (word size), cannot be represented.
+
+        Raises :py:exc:`NO_ENCODING` if the :py:class:`ElfData`, (byte order), cannot be represented.
+        """
+        classcode = ident.elfClass
+        if classcode in _fileEncodingDict:
+            elfclass = _fileEncodingDict[classcode]
+        else:
+            raise ElfFile.NO_CLASS
+
+        endiancode = ident.elfData
+        if endiancode in elfclass:
+            return elfclass[endiancode]
+        else:
+            raise ElfFile.NO_ENCODING
+
+    def __new__(cls, name, fileIdent):
+        assert fileIdent
+
+        if cls != ElfFile:
+            return super(ElfFile).__new__(cls)
+
+        retval = ElfFile.__new__(ElfFile.encodedClass(fileIdent), name, fileIdent)
+        retval.__init__(name, fileIdent)
+        return retval
+
+    def __init__(self, name, fileIdent):
+        """
+        :param :py:class:`str` name
+        :param :py:class:`ElfFileIdent`
+        """
+
+        self.name = name
+
+        self.fileIdent = fileIdent
+        self.fileHeader = None
+        self.sectionHeaders = None
+        self.programHeaders = None
+
+    def unpack(self):
+        self.fileHeader = fileHeaderClass().unpack(self.block, EI_NIDENT)
+
+        # section headers
+        if self.fileHeader.shoff == 0:
+            self.sectionHeaders = []
+        else:
+            sectionCount = self.fileHeader.shnum
+
+            self.sectionHeaders.append(sectionHeaderClass().unpack(self.block, self.fileHeader.shoff))
+
+            if sectionCount == 0:
+                sectionCount = self.sectionHeaders[0].size
+                
+            for i in xrange(1, sectionCount):
+                self.sectionHeaders.append(sectionHeaderClass().unpack(self.block,
+                                                                       self.fileHeader.shoff + (i * self.fileHeader.shentsize)))
+
+        # program headers
+        if self.fileHeader.phoff == 0:
+            self.programHeaders == []
+        else:
+            for i in xrange(self.fileHeader.phnum):
+                self.programHeaders.append(programHeaderClass().unpack(self.block,
+                                                                       self.fileHeader.phoff + (i * self.fileHeader.phentsize)))
+
+class ElfFile32b(ElfFile):
+    """
+    A subclass of :py:class:`ElfFile`.  This one represents 32-bit, big-endian files.
+    """
+    #fileHeaderClass = ElfFileHeader32b
+    #sectionHeaderClass = ElfSectionHeader32b
+    #programHeaderClass = ElfSectionHeader32b
+
+class ElfFile32l(ElfFile):
+    """
+    A subclass of :py:class:`ElfFile`.  This one represents 32-bit, little-endian files.
+    """
+    #fileHeaderClass = ElfFileHeader32l
+    #sectionHeaderClass = ElfSectionHeader32l
+    #programHeaderClass = ElfSectionHeader32l
+
+class ElfFile64b(ElfFile):
+    """
+    A subclass of :py:class:`ElfFile`.  This one represents 64-bit, big-endian files.
+    """
+    # fileHeaderClass = ElfFileHeader64b
+    # sectionHeaderClass = ElfSectionHeader64b
+    # programHeaderClass = ElfSectionHeader64b
+
+class ElfFile64l(ElfFile):
+    """
+    A subclass of :py:class:`ElfFile`.  This one represents 64-bit, little-endian files.
+    """
+    # fileHeaderClass = ElfFileHeader64l
+    # sectionHeaderClass = ElfSectionHeader64l
+    # programHeaderClass = ElfSectionHeader64l
+
+_fileEncodingDict = {
+    1: {
+        1: ElfFile32l,
+        2: ElfFile32b,
+        },
+    2: {
+        1: ElfFile64l,
+        2: ElfFile32b,
+        },
+    }
+"""
+This is a dict of dicts.  The first level keys correspond to
+:py:class:`ElfClass` codes and the values are second level dicts.  The
+second level dict keys correspond to :py:class:`ElfData` codes and the
+second level values are the four :py:class:`ElfFile` subclasses.  It
+is used by :py:meth:`ElfClass.encodedClass` to determine an
+appropriate subclass to represent a file based on a
+:py:class:`ElfFileIdent`.
+"""
+
+class ElfFileHeader(object):
+    """
+    This base class corresponds to the portion of the `ELF file header
+    <http://www.sco.com/developers/gabi/latest/ch4.eheader.html#elfid>`_
+    which follows :c:data:`e_ident`, that is, the word size and byte
+    order dependent portion.
+
+    All attributes are :py:class:`int`'s.  Their meanings can be
+    decoded with the accompanying :py:class:`coding.Coding`
+    subclasses.
+
+    This base class works in tight concert with it's subclasses:
+    :py:class:`ElfFileHeader32b`, :py:class:`ElfFileHeader32l`,
+    :py:class:`ElfFileHeader64b`, and :py:class:`ElfFileHeader64l`.
+    This base class sets useless defaults and includes any byte order
+    and word size independent methods while the subclasses define byte
+    order and word size dependent methods.
+    """
+
+    coder = None
+    """
+    This value is set by each subclass.
+
+    A :py:class:`struct.Struct` (de)coder involving thirteen fields:
+
+    * 
+    * ElfClass (32 vs 64-bit)
+    * ElfData (endianness)
+    * EV (file version)
+    * ElfOsabi (operating system)
+    * abiversion
+
+    .. note:: this is a 'virtual' field in the sense that it is only
+    assigned a trivial default by this class.  It is expected to be
+    assigned a byte order and word size sensitive value in the
+    subclasses
+    """
+
+    type = None
+    machine = None
+    version = None
+    entry = None
+    phoff = None
+    shoff = None
+    flags = None
+    ehsize = None
+    phentsize = None
+    phnum = None
+    shentsize = None
+    shnum = None
+    shstrndx = None
+
+    def unpack(self, block, offset=0):
+        (self.type, self.machine, self.version, self.entry,
+         self.phoff, self.shoff, self.flags, self.ehsize,
+         self.phentsize, self.phnum, self,shentsize, self.shnm,
+         self.shstrndx) = self.coder.unpack_from(buffer, offset)
+
+    def pack(self, block, offset=0):
+        self.coder.pack_into(block, offset,
+                             self.type, self.machine, self.version, self.entry,
+                             self.phoff, self.shoff, self.flags, self.ehsize,
+                             self.phentsize, self.phnum, self,shentsize, self.shnm,
+                             self.shstrndx)
+
+class ElfFileHeader32b(ElfFileHeader):
+    coder = struct.Struct(b'>HHIIIIIHHHHHH')
+
+class ElfFileHeader32l(ElfFileHeader):
+    coder = struct.Struct(b'<HHIIIIIHHHHHH')
+
+class ElfFileHeader64b(ElfFileHeader):
+    coder = struct.Struct(b'>HHIQQQIHHHHHH')
+
+class ElfFileHeader64l(ElfFileHeader):
+    coder = struct.Struct(b'<HHIQQQIHHHHHH')
+
+### MARKER - above is doc reviewed, below is just coded.
 
 class ET(coding.Coding):
     """
@@ -550,50 +808,6 @@ PF('PF_R', 0x4, 'Read')
 PF('PF_MASKOS', 0x0ff00000, 'Unspecified')
 PF('PF_MASKPROC', 0xf0000000, 'Unspecified')
 
-class ElfFileHeader(object):
-    coder = None
-
-    def __init__(self):
-        self.type = None
-        self.machine = None
-        self.version = None
-        self.entry = None
-        self.phoff = None
-        self.shoff = None
-        self.flags = None
-        self.ehsize = None
-        self.phentsize = None
-        self.phnum = None
-        self.shentsize = None
-        self.shnum = None
-        self.shstrndx = None
-
-    def unpack(self, block, offset=0):
-        (self.type, self.machine, self.version, self.entry,
-         self.phoff, self.shoff, self.flags, self.ehsize,
-         self.phentsize, self.phnum, self,shentsize, self.shnm,
-         self.shstrndx) = self.coder.unpack_from(buffer, offset)
-
-    def pack(self, block, offset=0):
-        self.coder.pack_into(block, offset,
-                             self.type, self.machine, self.version, self.entry,
-                             self.phoff, self.shoff, self.flags, self.ehsize,
-                             self.phentsize, self.phnum, self,shentsize, self.shnm,
-                             self.shstrndx)
-
-# 13 items
-class ElfFileHeader32b(ElfFileHeader):
-    coder = struct.Struct(b'>HHIIIIIHHHHHH')
-
-class ElfFileHeader32l(ElfFileHeader):
-    coder = struct.Struct(b'<HHIIIIIHHHHHH')
-
-class ElfFileHeader64b(ElfFileHeader):
-    coder = struct.Struct(b'>HHIQQQIHHHHHH')
-
-class ElfFileHeader64l(ElfFileHeader):
-    coder = struct.Struct(b'<HHIQQQIHHHHHH')
-
 
 class ElfSectionHeader(object):
     coder = None
@@ -689,90 +903,4 @@ class ElfProgramHeader64l(ElfProgramHeader64):
     coder = struct.Struct(b'<IIQQQQQQ')
 
 ### MARKER
-
-class ElfFile(object):
-    @staticmethod
-    def encodedClass(ident):
-        classcode = ident.elfClass.code
-        if classcode in encodingDict:
-            elfclass = encodingDict[classcode]
-        else:
-            raise NO_CLASS
-
-        endiancode = ident.elfData.code
-        if endiancode in elfclass:
-            return elfclass[endiancode]
-        else:
-            raise NO_ENCODING
-
-    fileHeaderClass = None
-
-    def __init__(self, name, fileobj, map, block, mode, fileIdent=None):
-        self.name = name
-        self.fileobj = fileobj
-        self.map = map
-        self.block = block
-        self.mode = mode
-
-        self.fileIdent = fileIdent
-        self.fileHeader = None
-        self.sectionHeaders = None
-        self.programHeaders = None
-
-    def unpack(self):
-        self.fileHeader = fileHeaderClass().unpack(self.block, EI_NIDENT)
-
-        # section headers
-        if self.fileHeader.shoff == 0:
-            self.sectionHeaders = []
-        else:
-            sectionCount = self.fileHeader.shnum
-
-            self.sectionHeaders.append(sectionHeaderClass().unpack(self.block, self.fileHeader.shoff))
-
-            if sectionCount == 0:
-                sectionCount = self.sectionHeaders[0].size
-                
-            for i in xrange(1, sectionCount):
-                self.sectionHeaders.append(sectionHeaderClass().unpack(self.block,
-                                                                       self.fileHeader.shoff + (i * self.fileHeader.shentsize)))
-
-        # program headers
-        if self.fileHeader.phoff == 0:
-            self.programHeaders == []
-        else:
-            for i in xrange(self.fileHeader.phnum):
-                self.programHeaders.append(programHeaderClass().unpack(self.block,
-                                                                       self.fileHeader.phoff + (i * self.fileHeader.phentsize)))
-
-class ElfFile32b(ElfFile):
-    fileHeaderClass = ElfFileHeader32b
-    sectionHeaderClass = ElfSectionHeader32b
-    programHeaderClass = ElfSectionHeader32b
-
-class ElfFile32l(ElfFile):
-    fileHeaderClass = ElfFileHeader32l
-    sectionHeaderClass = ElfSectionHeader32l
-    programHeaderClass = ElfSectionHeader32l
-
-class ElfFile64b(ElfFile):
-    fileHeaderClass = ElfFileHeader64b
-    sectionHeaderClass = ElfSectionHeader64b
-    programHeaderClass = ElfSectionHeader64b
-
-class ElfFile64l(ElfFile):
-    fileHeaderClass = ElfFileHeader64l
-    sectionHeaderClass = ElfSectionHeader64l
-    programHeaderClass = ElfSectionHeader64l
-
-encodingDict = {
-    1: {
-        1: ElfFile32l,
-        2: ElfFile32b,
-        },
-    2: {
-        1: ElfFile64l,
-        2: ElfFile32b,
-        },
-    }
 
