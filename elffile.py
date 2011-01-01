@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <31-Dec-2010 20:54:38 PST by rich@noir.com>
+# Time-stamp: <01-Jan-2011 12:20:43 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -326,8 +326,9 @@ class ElfFile(object):
     @staticmethod
     def encodedClass(ident):
         """
-        :param :py:class:`ElfFileIdent`:
-        :rtype :py:class:`ElfFile`:
+        :param :py:class:`ElfFileIdent`:  This is
+        :rtype :py:class:`ElfFile`: broken
+        .. todo:: file sphinx bug on this once code is released so that they can see it.
 
         Given an *ident*, return a suitable :py:class:`ElfFile` subclass to represent that file.
 
