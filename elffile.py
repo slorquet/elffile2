@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <01-Jan-2011 12:20:43 PST by rich@noir.com>
+# Time-stamp: <01-Jan-2011 13:52:45 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -12,8 +12,6 @@ Elffile is a library which reads and writes `ELF format object files
 Elffile is pure `python <http://python.org>`_ so installation is easy.
 
 .. todo:: need a "copy" method
-
-.. todo:: need an equality method
 
 .. todo:: need a reverse write method, (for testing)
 
@@ -82,6 +80,50 @@ def open(name=None, fileobj=None, map=None, block=None):
                 map=map,
                 block=block)
 
+class StructBase(object):
+    """
+    An abstract base class representing objects which are inherently
+    based on a struct.
+    """
+
+    coder = None
+    """
+    The :py:class:`struct.Struct` used to encode/decode this object
+    into a block of memory.  This is expected to be overridden by
+    subclasses.
+    """
+
+    @property
+    def size(self):
+        """
+        Exact size in bytes of a block of memory into which is suitable
+        for packing this instance.
+        """
+        return self.coder.size
+
+    def unpack(self, block, offset=0):
+        """
+        Set the values of this instance from an in-memory
+        representation of the struct.
+
+        :param string block: block of memory from which to unpack
+        :param int offset: optional offset into the memory block from
+            which to start unpacking
+        """
+        raise NotImplementedError
+
+    def pack(self, block, offset=0):
+        """
+        Store the values of this instance into an in-memory
+        representation of the file.
+
+        :param string block: block of memory into which to pack
+        :param int offset: optional offset into the memory block into
+            which to start packing
+        """
+        raise NotImplementedError
+
+
 EI_NIDENT = 16
 """
 Length of the byte-endian-independent, word size independent initial
@@ -89,7 +131,7 @@ portion of the ELF header file.  This is the portion represented by
 :py:class:`ElfFileIdent`.
 """
 
-class ElfFileIdent(object):
+class ElfFileIdent(StructBase):
     """
     This class corresponds to the first, byte-endian-independent,
     values in an elf file.  These tell us about the encodings for the
@@ -101,30 +143,6 @@ class ElfFileIdent(object):
     decoded with the accompanying :py:class:`coding.Coding`
     subclasses.
     """
-
-    coder = struct.Struct(b'=4sBBBBBxxxxxxx')
-    """
-    A :py:class:`struct.Struct` (de)coder involving six fields:
-
-    * '\x1fELF', (Elf file magic number)
-    * ElfClass (32 vs 64-bit)
-    * ElfData (endianness)
-    * EV (file version)
-    * ElfOsabi (operating system)
-    * abiversion
-    """
-
-    @property
-    def size(self):
-        """
-        Exact size in bytes of a block of memory into which is suitable
-        for packing this instance.
-        """
-        return self.coder.size
-
-    # size is EI_IDENT
-    assert (coder.size == EI_NIDENT), 'coder.size = {0}({0}), EI_NIDENT = {0}({0})'.format(coder.size, type(coder.size),
-                                                                                           EI_NIDENT, type(EI_NIDENT))
 
     magic = None
     """
@@ -161,14 +179,23 @@ class ElfFileIdent(object):
     this ELF file.
     """
 
-    def unpack(self, block, offset=0):
-        """
-        Load the values of this instance based on an in-memory representation of the file.
+    coder = struct.Struct(b'=4sBBBBBxxxxxxx')
+    """
+    A :py:class:`struct.Struct` (de)coder involving six fields:
 
-        :param string block: block of memory from which to unpack
-        :param int offset: optional offset into the memory block from
-            which to start unpacking
-        """
+    * '\x1fELF', (Elf file magic number)
+    * ElfClass (32 vs 64-bit)
+    * ElfData (endianness)
+    * EV (file version)
+    * ElfOsabi (operating system)
+    * abiversion
+    """
+
+    # size is EI_IDENT
+    assert (coder.size == EI_NIDENT), 'coder.size = {0}({0}), EI_NIDENT = {0}({0})'.format(coder.size, type(coder.size),
+                                                                                           EI_NIDENT, type(EI_NIDENT))
+
+    def unpack(self, block, offset=0):
         (self.magic, self.elfClass, self.elfData, self.fileVersion, self.osabi,
          self.abiversion) = self.coder.unpack_from(block, offset)
 
@@ -203,7 +230,7 @@ class ElfFileIdent(object):
 class ElfClass(coding.Coding):
     """
     Encodes the word size of the elf file as from the `ident portion
-    of the elf file header
+    of the ELF file header
     <http://www.sco.com/developers/gabi/latest/ch4.eheader.html#elfid>`_.
     This is a subclass of :py:class:`coding.Coding` and encodes
     :py:attr:`ElfFileIdent.elfClass`.
@@ -265,7 +292,7 @@ ElfOsabi('ELFOSABI_NSK', 14, 'Hewlett-Packard Non-Stop Kernel')
 ElfOsabi('ELFOSABI_AROS', 15, 'Amiga Research OS')
 ElfOsabi('ELFOSABI_FENIXOS', 16, 'The FenixOS highly scalable multi-core OS')
 
-class ElfFile(object):
+class ElfFile(StructBase):
     """
     This class corresponds to an entire ELF format file.  It is an
     abstract base class which is not intended to be instantiated by
@@ -281,33 +308,38 @@ class ElfFile(object):
 
     name = None
     """
-    A :py:class:`str` containing the file name for this ELF format object file.
+    A :py:class:`str` containing the file name for this ELF format
+    object file.
     """
 
     fileIdent = None
     """
-    A :py:class:`ElfFileIdent` representing the :c:data:`e_ident` portion of the ELF format file header.
+    A :py:class:`ElfFileIdent` representing the :c:data:`e_ident`
+    portion of the ELF format file header.
     """
 
     fileHeader = None
     """
-    A :py:class:`ElfFileHeader` represeing the byte order and word size dependent portion of the ELF format file header.
+    A :py:class:`ElfFileHeader` represeing the byte order and word
+    size dependent portion of the ELF format file header.
     """
 
     sectionHeaders = None
     """
-    A :py:class:`list` of section headers.  This corresponds to the section header table.
+    A :py:class:`list` of section headers.  This corresponds to the
+    section header table.
     """
 
     programHeaders = None
     """
-    A :py:class:`list` of the program headers.  This corresponds to the program header table.
+    A :py:class:`list` of the program headers.  This corresponds to
+    the program header table.
     """
 
     fileHeaderClass = None
     """
-    Intended to be set by the subclasses.  Points to the byte order and word size sensitive
-    class to be used for the ELF file header. 
+    Intended to be set by the subclasses.  Points to the byte order
+    and word size sensitive class to be used for the ELF file header.
     """
 
     class NO_CLASS(Exception):
@@ -384,10 +416,10 @@ class ElfFile(object):
 
         self.fileIdent.unpack(block, offset)
 
-        # if not self.fileHeader:
-        #     self.fileHeader = fileHeaderClass()
+        if not self.fileHeader:
+            self.fileHeader = self.fileHeaderClass()
 
-        # self.fileHeader.unpack(block, offset + self.fileIdent.size)
+        self.fileHeader.unpack(block, offset + self.fileIdent.size)
 
         # # section headers
         # if self.fileHeader.shoff == 0:
@@ -421,152 +453,211 @@ class ElfFile(object):
         """
 
         self.fileIdent.pack(block, offset)
+        self.fileHeader.pack(block, offset + self.fileIdent.size)
 
     @property
     def size(self):
-        return (self.fileIdent.size)
-
-    def __repr__(self):
-        return '<{0}@{1}: name=\'{2}\', fileIdent={3}>'.format(self.__class__.__name__, hex(id(self)), self.name, self.fileIdent)
+        return (self.fileIdent.size
+                + self.fileHeader.size)
 
     def __eq__(self, other):
-        return (self.fileIdent == other.fileIdent)
+        return (self.fileIdent == other.fileIdent
+                and self.fileHeader == other.fileHeader)
 
-class ElfFile32b(ElfFile):
-    """
-    A subclass of :py:class:`ElfFile`.  This one represents 32-bit, big-endian files.
-    """
-    #fileHeaderClass = ElfFileHeader32b
-    #sectionHeaderClass = ElfSectionHeader32b
-    #programHeaderClass = ElfSectionHeader32b
+    def __repr__(self):
+        return ('<{0}@{1}: name=\'{2}\', fileIdent={3}, fileHeader={4}>'
+                .format(self.__class__.__name__, hex(id(self)), self.name, self.fileIdent, self.fileHeader))
 
-class ElfFile32l(ElfFile):
-    """
-    A subclass of :py:class:`ElfFile`.  This one represents 32-bit, little-endian files.
-    """
-    #fileHeaderClass = ElfFileHeader32l
-    #sectionHeaderClass = ElfSectionHeader32l
-    #programHeaderClass = ElfSectionHeader32l
 
-class ElfFile64b(ElfFile):
+class ElfFileHeader(StructBase):
     """
-    A subclass of :py:class:`ElfFile`.  This one represents 64-bit, big-endian files.
-    """
-    # fileHeaderClass = ElfFileHeader64b
-    # sectionHeaderClass = ElfSectionHeader64b
-    # programHeaderClass = ElfSectionHeader64b
-
-class ElfFile64l(ElfFile):
-    """
-    A subclass of :py:class:`ElfFile`.  This one represents 64-bit, little-endian files.
-    """
-    # fileHeaderClass = ElfFileHeader64l
-    # sectionHeaderClass = ElfSectionHeader64l
-    # programHeaderClass = ElfSectionHeader64l
-
-_fileEncodingDict = {
-    1: {
-        1: ElfFile32l,
-        2: ElfFile32b,
-        },
-    2: {
-        1: ElfFile64l,
-        2: ElfFile32b,
-        },
-    }
-"""
-This is a dict of dicts.  The first level keys correspond to
-:py:class:`ElfClass` codes and the values are second level dicts.  The
-second level dict keys correspond to :py:class:`ElfData` codes and the
-second level values are the four :py:class:`ElfFile` subclasses.  It
-is used by :py:meth:`ElfClass.encodedClass` to determine an
-appropriate subclass to represent a file based on a
-:py:class:`ElfFileIdent`.
-"""
-
-class ElfFileHeader(object):
-    """
-    This base class corresponds to the portion of the `ELF file header
-    <http://www.sco.com/developers/gabi/latest/ch4.eheader.html#elfid>`_
+    This abstract base class corresponds to the portion of the `ELF
+    file header
+    <http://www.sco.com/developers/gabi/latest/ch4.eheader.html>`_
     which follows :c:data:`e_ident`, that is, the word size and byte
-    order dependent portion.
+    order dependent portion.  This includes thirteen fields.
 
     All attributes are :py:class:`int`'s.  Their meanings can be
     decoded with the accompanying :py:class:`coding.Coding`
     subclasses.
 
-    This base class works in tight concert with it's subclasses:
-    :py:class:`ElfFileHeader32b`, :py:class:`ElfFileHeader32l`,
-    :py:class:`ElfFileHeader64b`, and :py:class:`ElfFileHeader64l`.
-    This base class sets useless defaults and includes any byte order
-    and word size independent methods while the subclasses define byte
-    order and word size dependent methods.
-    """
-
-    coder = None
-    """
-    This value is set by each subclass.
-
-    A :py:class:`struct.Struct` (de)coder involving thirteen fields:
-
-    * 
-    * ElfClass (32 vs 64-bit)
-    * ElfData (endianness)
-    * EV (file version)
-    * ElfOsabi (operating system)
-    * abiversion
-
-    .. note:: this is a 'virtual' field in the sense that it is only
-    assigned a trivial default by this class.  It is expected to be
-    assigned a byte order and word size sensitive value in the
-    subclasses
+    This abstract base class works in tight concert with it's
+    subclasses: :py:class:`ElfFileHeader32b`,
+    :py:class:`ElfFileHeader32l`, :py:class:`ElfFileHeader64b`, and
+    :py:class:`ElfFileHeader64l`.  This base class sets useless
+    defaults and includes any byte order and word size independent
+    methods while the subclasses define byte order and word size
+    dependent methods.
     """
 
     type = None
+    """
+    The 'type', (sic), of the file which represents whether this file
+    is an executable, relocatable object, shared library, etc.
+    Encoded using :py:class:`ET`.
+    """
+
     machine = None
+    """
+    Specifies the processor architecture of the file.  Encoded using :py:class:`EM`.
+    """
+
     version = None
+    """
+    Specifies the version of the ELF format used for this file.
+    Should be 1 in most cases.  Extensions are expected to increment
+    the number.
+    """
+
     entry = None
+    """
+    Virtual start address when this file is converted into a process.
+    Zero if not used.
+    """
+
     phoff = None
+    """
+    Offset in bytes into this file at which the program header table,
+    (:py:class:`ElfProgramHeader`), starts.
+    """
+
     shoff = None
+    """
+    Offset in bytes into this file at which the section header table,
+    (:py:class:`ElfSectionHeader`), starts.
+    """
+
     flags = None
+    """
+    Any processor specific flags for this file.
+    """
+
     ehsize = None
+    """
+    Size in bytes of the ELF file header, (:py:class:`ElfFileHeader`),
+    as represented in this file.
+    """
+    
     phentsize = None
+    """
+    Size in bytes of a program header table entry,
+    (:py:class:`ElfProgramHeader`), as represented in this file.  All
+    entries are the same size.
+    """
+
     phnum = None
+    """
+    A count of the number of program header table entries,
+    (:py:class:`ElfProgramHeader`), in this file.
+    """
+
     shentsize = None
+    """
+    Size in bytes of a section table entry,
+    (:py:class:`ElfSectionHeader`), as represented in this file.  All
+    entries aer the same size.
+    """
+
     shnum = None
+    """
+    A count of the number of section header table entries,
+    (:py:class:`ElfSectionHeader`), in this file.
+    """
+
     shstrndx = None
+    """
+    The section header table index of the section name string table.
+    (SHN_UNDEF if there is none).
+    """
 
     def unpack(self, block, offset=0):
+        """
+        Initialize this instance from values read by unpacking from *offset* bytes into *block* .
+
+        :param :py:class:`bytes` block:
+        :param :py:class:`int` offset:
+        """
+
+        x = self.coder.unpack_from(block, offset)
         (self.type, self.machine, self.version, self.entry,
          self.phoff, self.shoff, self.flags, self.ehsize,
-         self.phentsize, self.phnum, self,shentsize, self.shnm,
-         self.shstrndx) = self.coder.unpack_from(buffer, offset)
+         self.phentsize, self.phnum, self.shentsize, self.shnm,
+         self.shstrndx) = x
 
     def pack(self, block, offset=0):
+        """
+        Pack this instance into memory starting at *offset* into *block*.
+
+        :param :py:class:`str` block:
+        :param :py:class:`int` offset:
+        """
+
         self.coder.pack_into(block, offset,
                              self.type, self.machine, self.version, self.entry,
                              self.phoff, self.shoff, self.flags, self.ehsize,
                              self.phentsize, self.phnum, self,shentsize, self.shnm,
                              self.shstrndx)
 
+    def __eq__(self, other):
+        return (self.type == other.type
+                and self.machine == other.machine
+                and self.version == other.version
+                and self.entry == other.entry
+                and self.phoff == other.phoff
+                and self.shoff == other.shoff
+                and self.flags == other.flags
+                and self.ehsize == other.ehsize
+                and self.phentsize == other.phentsize
+                and self.phnum == other.phnum
+                and self.shentsize == other.shentsize
+                and self.shnm == other.shnm
+                and self.shstrndx == other.shstrndx)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __repr__(self):
+        return ('<{0}@{1}: type={}, machine={}, version={}, entry={}, phoff={}, shoff={}, flags={}, ehsize={}, phnum={}, shentsize={}, shnm={}, shstrndx={}>'
+                .format(self.__class__.__name__, hex(id(self)), ET.bycode[self.type], EM.bycode[self.machine],
+                        self.version, hex(self.entry), self.phoff, self.shoff,
+                        hex(self.flags), self.ehsize, self.phnum, self.shentsize,
+                        self.shnm, self.shstrndx))
+
 class ElfFileHeader32b(ElfFileHeader):
+    """
+    A subclass of :py:class:`ElfFileHeader`.  This one represents
+    32-bit, big-endian headers.
+    """
     coder = struct.Struct(b'>HHIIIIIHHHHHH')
 
 class ElfFileHeader32l(ElfFileHeader):
+    """
+    A subclass of :py:class:`ElfFileHeader`.  This one represents
+    32-bit, little-endian headers.
+    """
     coder = struct.Struct(b'<HHIIIIIHHHHHH')
 
 class ElfFileHeader64b(ElfFileHeader):
+    """
+    A subclass of :py:class:`ElfFileHeader`.  This one represents
+    64-bit, big-endian headers.
+    """
     coder = struct.Struct(b'>HHIQQQIHHHHHH')
 
 class ElfFileHeader64l(ElfFileHeader):
+    """
+    A subclass of :py:class:`ElfFileHeader`.  This one represents
+    64-bit, little-endian headers.
+    """
     coder = struct.Struct(b'<HHIQQQIHHHHHH')
-
-### MARKER - above is doc reviewed, below is just coded.
 
 class ET(coding.Coding):
     """
     Encodes the type of this elf file, (relocatable, executable,
-    shared library, etc.)
+    shared library, etc.), as represented in the `ELF file header
+    <http://www.sco.com/developers/gabi/latest/ch4.eheader.html`_.
+    This is a subclass of :py:class:`coding.Coding` and encodes
+    :py:attr:`ElfFileHeader.type`.
     """
     bycode = byname = {}
 
@@ -582,7 +673,11 @@ ET('ET_HIPROC', 0xffff, 'Processor-specific')
 
 class EM(coding.Coding):
     """
-    Encodes the processor type represented in this elf file.
+    Encodes the processor type represented in this elf file as
+    recorded in the `ELF file header
+    <http://www.sco.com/developers/gabi/latest/ch4.eheader.html`_.
+    This is a subclass of :py:class:`coding.Coding` and encodes
+    :py:attr:`ElfFileHeader.machine`.
     """
     bycode = byname = {}
     overload_codes = True
@@ -741,6 +836,65 @@ EM('EM_TILEGX', 191, 'Tilera TILE-Gx multicore architecture family')
 EM('EM_CLOUDSHIELD', 192, 'CloudShield architecture family')
 EM('EM_COREA_1ST', 193, 'KIPO-KAIST Core-A 1st generation processor family')
 EM('EM_COREA_2ND', 194, 'KIPO-KAIST Core-A 2nd generation processor family')
+
+class ElfFile32b(ElfFile):
+    """
+    A subclass of :py:class:`ElfFile`.  This one represents 32-bit,
+    big-endian files.
+    """
+    fileHeaderClass = ElfFileHeader32b
+    #sectionHeaderClass = ElfSectionHeader32b
+    #programHeaderClass = ElfSectionHeader32b
+
+class ElfFile32l(ElfFile):
+    """
+    A subclass of :py:class:`ElfFile`.  This one represents 32-bit,
+    little-endian files.
+    """
+    fileHeaderClass = ElfFileHeader32l
+    #sectionHeaderClass = ElfSectionHeader32l
+    #programHeaderClass = ElfSectionHeader32l
+
+class ElfFile64b(ElfFile):
+    """
+    A subclass of :py:class:`ElfFile`.  This one represents 64-bit,
+    big-endian files.
+    """
+    fileHeaderClass = ElfFileHeader64b
+    # sectionHeaderClass = ElfSectionHeader64b
+    # programHeaderClass = ElfSectionHeader64b
+
+class ElfFile64l(ElfFile):
+    """
+    A subclass of :py:class:`ElfFile`.  This one represents 64-bit,
+    little-endian files.
+    """
+    fileHeaderClass = ElfFileHeader64l
+    # sectionHeaderClass = ElfSectionHeader64l
+    # programHeaderClass = ElfSectionHeader64l
+
+_fileEncodingDict = {
+    1: {
+        1: ElfFile32l,
+        2: ElfFile32b,
+        },
+    2: {
+        1: ElfFile64l,
+        2: ElfFile32b,
+        },
+    }
+"""
+This is a dict of dicts.  The first level keys correspond to
+:py:class:`ElfClass` codes and the values are second level dicts.  The
+second level dict keys correspond to :py:class:`ElfData` codes and the
+second level values are the four :py:class:`ElfFile` subclasses.  It
+is used by :py:meth:`ElfClass.encodedClass` to determine an
+appropriate subclass to represent a file based on a
+:py:class:`ElfFileIdent`.
+"""
+
+### MARKER - above is doc reviewed, below is just coded.
+
 
 class SHN(coding.Coding):
     bycode = byname = {}

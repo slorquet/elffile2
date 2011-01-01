@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <31-Dec-2010 20:56:35 PST by rich@noir.com>
+# Time-stamp: <01-Jan-2011 13:45:56 PST by rich@noir.com>
 
 """
 Tests for elffile.
@@ -33,7 +33,7 @@ def testOpen():
     byname = elffile.open(name=filename)
 
     with open(filename, 'rb') as fileobj:
-        byfileobj = elffile.open(fileobj=fileobj)
+        byfileobj = elffile.open(name=filename, fileobj=fileobj)
 
     with open(filename, 'rb') as fileobj:
         m = mmap.mmap(fileobj.fileno(), 0, mmap.MAP_SHARED, mmap.PROT_READ)
