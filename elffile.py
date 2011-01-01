@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <31-Dec-2010 20:54:38 PST by rich@noir.com>
+# Time-stamp: <31-Dec-2010 21:05:10 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -291,7 +291,7 @@ class ElfFile(object):
 
     fileHeader = None
     """
-    A :py:class:`ElfFileHeader` represeing the byte order and word size dependent portion of the ELF format file header.
+    A :py:class:`ElfFileHeader` representing the byte order and word size dependent portion of the ELF format file header.
     """
 
     sectionHeaders = None
@@ -374,8 +374,8 @@ class ElfFile(object):
         """
         Initialize this instance from values read by unpacking from *offset* bytes into *block* .
 
-        :param :py:class:`bytes` block:
-        :param :py:class:`int` offset:
+        :param :py:class:`bytes` block: a memory block
+        :param :py:class:`int` offset: an offset into the memory block
         """
 
         if not self.fileIdent:
