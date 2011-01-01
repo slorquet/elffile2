@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <31-Dec-2010 12:36:58 PST by rich@noir.com>
+# Time-stamp: <31-Dec-2010 20:24:06 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -135,6 +135,14 @@ class ElfFileIdent(object):
     * abiversion
     """
 
+    @property
+    def size(self):
+        """
+        Exact size in bytes of a block of memory into which is suitable
+        for packing this instance.
+        """
+        return self.coder.size
+
     # size is EI_IDENT
     assert (coder.size == EI_NIDENT), 'coder.size = {0}({0}), EI_NIDENT = {0}({0})'.format(coder.size, type(coder.size),
                                                                                            EI_NIDENT, type(EI_NIDENT))
@@ -196,9 +204,10 @@ class ElfFileIdent(object):
         self.coder.pack_into(block, offset, self.magic, self.elfClass, self.elfData, self.fileVersion, self.osabi, self.abiversion)
 
     def __repr__(self):
-        return ('<{0}: coder={1}, magic={2}, elfClass={3}, elfData={4}, fileVersion={5}, osabi={6}, abiversion={7}>'
-                .format(self.__class__.__name__, self.coder, self.magic, self.elfClass,
-                        self.elfData, self.fileVersion, self.osabi, self.abiversion))
+        return ('<{0}@{1}: coder={2}, magic=\'{3}\', elfClass={4}, elfData={5}, fileVersion={6}, osabi={7}, abiversion={8}>'
+                .format(self.__class__.__name__, hex(id(self)), self.coder, self.magic,
+                        self.elfClass, self.elfData, self.fileVersion, self.osabi,
+                        self.abiversion))
 
     def __eq__(self, other):
         return (self.coder == other.coder
@@ -363,7 +372,7 @@ class ElfFile(object):
         assert fileIdent
 
         if cls != ElfFile:
-            return super(ElfFile).__new__(cls)
+            return object.__new__(cls)
 
         retval = ElfFile.__new__(ElfFile.encodedClass(fileIdent), name, fileIdent)
         retval.__init__(name, fileIdent)
@@ -382,31 +391,66 @@ class ElfFile(object):
         self.sectionHeaders = None
         self.programHeaders = None
 
-    def unpack(self):
-        self.fileHeader = fileHeaderClass().unpack(self.block, EI_NIDENT)
+    def unpack(self, block, offset=0):
+        """
+        Initialize this instance from values read by unpacking from *offset* bytes into *block* .
 
-        # section headers
-        if self.fileHeader.shoff == 0:
-            self.sectionHeaders = []
-        else:
-            sectionCount = self.fileHeader.shnum
+        :param :py:class:`bytes` block:
+        :param :py:class:`int` offset:
+        """
 
-            self.sectionHeaders.append(sectionHeaderClass().unpack(self.block, self.fileHeader.shoff))
+        if not self.fileIdent:
+            self.fileIdent = ElfFileIdent()
 
-            if sectionCount == 0:
-                sectionCount = self.sectionHeaders[0].size
+        self.fileIdent.unpack(block, offset)
+
+        # if not self.fileHeader:
+        #     self.fileHeader = fileHeaderClass()
+
+        # self.fileHeader.unpack(block, offset + self.fileIdent.size)
+
+        # # section headers
+        # if self.fileHeader.shoff == 0:
+        #     self.sectionHeaders = []
+        # else:
+        #     sectionCount = self.fileHeader.shnum
+
+        #     self.sectionHeaders.append(sectionHeaderClass().unpack(self.block, self.fileHeader.shoff))
+
+        #     if sectionCount == 0:
+        #         sectionCount = self.sectionHeaders[0].size
                 
-            for i in xrange(1, sectionCount):
-                self.sectionHeaders.append(sectionHeaderClass().unpack(self.block,
-                                                                       self.fileHeader.shoff + (i * self.fileHeader.shentsize)))
+        #     for i in xrange(1, sectionCount):
+        #         self.sectionHeaders.append(sectionHeaderClass().unpack(self.block,
+        #                                                                self.fileHeader.shoff + (i * self.fileHeader.shentsize)))
 
-        # program headers
-        if self.fileHeader.phoff == 0:
-            self.programHeaders == []
-        else:
-            for i in xrange(self.fileHeader.phnum):
-                self.programHeaders.append(programHeaderClass().unpack(self.block,
-                                                                       self.fileHeader.phoff + (i * self.fileHeader.phentsize)))
+        # # program headers
+        # if self.fileHeader.phoff == 0:
+        #     self.programHeaders == []
+        # else:
+        #     for i in xrange(self.fileHeader.phnum):
+        #         self.programHeaders.append(programHeaderClass().unpack(self.block,
+        #                                                                self.fileHeader.phoff + (i * self.fileHeader.phentsize)))
+
+    def pack(self, block, offset=0):
+        """
+        Pack this instance into memory starting at *offset* into *block*.
+
+        :param :py:class:`str` block:
+        :param :py:class:`int` offset:
+        """
+
+        self.fileIdent.pack(block, offset)
+
+    @property
+    def size(self):
+        return (self.fileIdent.size)
+
+    def __repr__(self):
+        return '<{0}@{1}: name=\'{2}\', fileIdent={3}>'.format(self.__class__.__name__, hex(id(self)), self.name, self.fileIdent)
+
+    def __eq__(self, other):
+        return (self.fileIdent == other.fileIdent)
 
 class ElfFile32b(ElfFile):
     """
