@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <31-Dec-2010 20:25:55 PST by rich@noir.com>
+# Time-stamp: <31-Dec-2010 20:56:35 PST by rich@noir.com>
 
 """
 Tests for elffile.
@@ -22,8 +22,31 @@ from nose.tools import assert_true, assert_false, assert_equal, assert_raises, r
 import glob
 import sys
 import os
+import mmap
 
 import elffile
+
+def testOpen():
+    for filename in glob.glob(os.path.join('testfiles', '*', '*.o')):
+        break
+
+    byname = elffile.open(name=filename)
+
+    with open(filename, 'rb') as fileobj:
+        byfileobj = elffile.open(fileobj=fileobj)
+
+    with open(filename, 'rb') as fileobj:
+        m = mmap.mmap(fileobj.fileno(), 0, mmap.MAP_SHARED, mmap.PROT_READ)
+        bymap = elffile.open(map=m)
+
+        block = m[:]
+
+    byblock = elffile.open(block=block)
+
+    assert_equal(byname, byfileobj)
+    assert_equal(byfileobj, bymap)
+    assert_equal(bymap, byblock)
+
 
 def testTestfiles():
     for filename in (glob.glob(os.path.join('testfiles', '*', '*.o'))

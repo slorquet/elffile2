@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <31-Dec-2010 20:24:06 PST by rich@noir.com>
+# Time-stamp: <31-Dec-2010 20:54:38 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -30,78 +30,57 @@ import struct
 
 import coding
 
-def open(name=None, fileobj=None, map=None, block=None, mode='r', use_map=True):
+def open(name=None, fileobj=None, map=None, block=None):
     """
-    The open function takes some form of file identifier, reads the
-    first few bytes, (via :py:class:`ElfFileIdent`), to determine
-    whether the file is 32-bit or 64-bit encoded and whether it is big
-    or little endian.  Based on this information it initializes an
-    instance of the appropriate class, :py:class:`ElfFile32b`,
-    :py:class:`ElfFile32l`, :py:class:`ElfFile64b`,
-    :py:class:`ElfFile64l`, respectively, each of which are subclasses
-    of the :py:class:`ElfFile` class.
 
-    :param string name: a file name
-    :param file fileobj: a file object, (if given, this overrides *name*)
-    :param mmap.mmap map: a :py:class:`mmap.mmap`, (if given, this overrides *fileobj*)
-    :param string block: file info in a block of memory, (if given, this overrides *map*)
-    :param string mode: must be 'r' for read
-    :param bool use_mmap: if True, then use map in place.  If False,
-        the copy the file contents from map to block.
+    The open function takes some form of file identifier and creates
+    an :py:class:`ElfFile` instance from it.
 
-    The file to be opened can be specified in any of four different forms:
+    :param :py:class:`str` name: a file name
+    :param :py:class:`file` fileobj: if given, this overrides *name*
+    :param :py:class:`mmap.mmap` map: if given, this overrides *fileobj*
+    :param :py:class:`bytes` block: file contents in a block of memory, (if given, this overrides *map*)
+
+    The file to be used can be specified in any of four different
+    forms, (in reverse precedence):
 
     #. a file name
     #. :py:class:`file` object
     #. :py:mod:`mmap.mmap`, or
     #. a block of memory
-
-    If an :py:class:`mmap.mmap` object is specified then any file
-    object or file name specified are ignored.  Instead, those values
-    are initialized from the :py:class:`mmap.mmap` object.
-
-    If no :py:class:`mmap.mmap` object is specified and a file object
-    is specified then any file name specified is ignored.  Instead,
-    that value is initialized from the :py:class:`file` object and mmap'd.
-
-    IF no :py:class:`mmap.mmap` object and no :py:class:`file` object
-    are specified then the file name will be opened and mapped.
-
-    If use_mmap is :py:const:`True`, then we will use the mmap object
-    as our memory block.  This uses a file descriptor but is faster as
-    it eliminates an extra memory-to-memory copy.  If *use_mmap* is
-    :py:const:`False`, the mmap content is copied into process memory
-    and the file descriptor is closed.
-
-    In all read cases except when *use_mmap* is :py:const:`True` the
-    file is copied into memory and the descriptor closed before this
-    function returns.
     """
 
-    assert use_mmap
-    assert mode == 'r'
-
     if block:
-        fileIdent = ElfFileIdent().unpack(block)
-        return ElfFile.encodedClass(fileIdent)(name, fileobj, map, block, mode, fileIdent)
+        if not name:
+            name = '<unknown>'
+
+        efi = ElfFileIdent()
+        efi.unpack(block)
+
+        ef = ElfFile.encodedClass(efi)(name, efi)
+        ef.unpack(block)
+
+        if fileobj:
+            fileobj.close()
+
+        return ef
 
     if map:
-        if use_map:
-            block = map
-        else:
-            block = map[:]
-            map.close()
+        block = map
 
     elif fileobj:
-        map = mmap.mmap(fileobj.fd.fileno(), 0, mmap.MAP_SHARED, mmap.PROT_READ)
+        map = mmap.mmap(fileobj.fileno(), 0, mmap.MAP_SHARED, mmap.PROT_READ)
 
     elif name:
-        fileobj = open(name, 'rb')
+        fileobj = file(name, 'rb')
 
     else:
         assert False
         
-    return __name__.open(name, fileobj, map, block, mode, use_map)
+    return open(name=name,
+                fileobj=fileobj,
+                map=map,
+                block=block)
 
 EI_NIDENT = 16
 """
