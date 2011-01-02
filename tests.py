@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <01-Jan-2011 13:45:56 PST by rich@noir.com>
+# Time-stamp: <02-Jan-2011 13:47:23 PST by rich@noir.com>
 
 """
 Tests for elffile.
@@ -23,8 +23,11 @@ import glob
 import sys
 import os
 import mmap
+import pprint
 
 import elffile
+
+pp = pprint.PrettyPrinter(width=132)
 
 def testOpen():
     for filename in glob.glob(os.path.join('testfiles', '*', '*.o')):
@@ -58,14 +61,14 @@ def testTestfiles():
             content = f.read()
 
         efi = elffile.ElfFileIdent()
-        efi.unpack(content)
+        efi.unpack_from(content)
 
-        if efi.magic != '\7fELF':
+        if efi.magic != '\x7fELF':
             continue
 
         print('{0}: {1}'.format(f.name, efi), file=sys.stderr)
         newcontent = bytearray(efi.size)
-        efi.pack(newcontent)
+        efi.pack_into(newcontent)
 
         # if content != newcontent:
         #     print('len(content) = {0}, len(newcontent) = {1}'.format(len(content), len(newcontent)))
@@ -77,19 +80,20 @@ def testTestfiles():
         assert_true(content.startswith(newcontent))
 
         efi2 = elffile.ElfFileIdent()
-        efi2.unpack(bytes(newcontent))
+        efi2.unpack_from(bytes(newcontent))
         assert_equal(efi, efi2)
 
-        ef = elffile.ElfFile(f.name, efi)
-        ef.unpack(content)
+        ef = elffile.ElfFile(filename, efi)
+        ef.unpack_from(content)
 
         newcontent = bytearray(ef.size)
-        ef.pack(newcontent)
+        ef.pack_into(newcontent)
 
-        assert_true(content.startswith(newcontent)) # FIXME: eventually need to compare equality
+        # FIXME: this is only true if we pack with the same order.  :\.  Maybe need 3 stage?
+        #assert_true(content.startswith(newcontent)) # FIXME: eventually need to compare equality
 
-        ef2 = elffile.ElfFile(f.name, efi2)
-        ef2.unpack(bytes(newcontent))
+        ef2 = elffile.ElfFile(filename, efi2)
+        ef2.unpack_from(bytes(newcontent))
         assert_equal(ef, ef2)
 
 
