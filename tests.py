@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <02-Jan-2011 13:47:23 PST by rich@noir.com>
+# Time-stamp: <02-Jan-2011 15:02:32 PST by rich@noir.com>
 
 """
 Tests for elffile.
@@ -66,7 +66,7 @@ def testTestfiles():
         if efi.magic != '\x7fELF':
             continue
 
-        print('{0}: {1}'.format(f.name, efi), file=sys.stderr)
+        #print('{0}: {1}'.format(f.name, efi), file=sys.stderr)
         newcontent = bytearray(efi.size)
         efi.pack_into(newcontent)
 
