@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <02-Jan-2011 19:36:47 PST by rich@noir.com>
+# Time-stamp: <02-Jan-2011 19:46:48 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -863,8 +863,7 @@ ET('ET_HIPROC', 0xffff, 'Processor-specific')
 class EM(coding.Coding):
     """
     Encodes the processor type represented in this elf file as
-    recorded in the `ELF file header
-    <http://www.sco.com/developers/gabi/latest/ch4.eheader.html`_.
+    recorded in the `ELF file header <http://www.sco.com/developers/gabi/latest/ch4.eheader.html`_.
 
     This is a subclass of :py:class:`coding.Coding` and encodes
     :py:attr:`ElfFileHeader.machine`.

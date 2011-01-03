@@ -13,7 +13,7 @@ the author is aware.
 .. note:: K Richard Pixley, the author of *elffile* was also one of
     the original authors of BFD.
 
-As software architecture goes, it's not a very good design in the
+As software architecture goes, BFD is not a very good design in the
 sense that using BFD also requires an intimate understanding of the
 BFD internals.  BFD based ports to new formats are typically difficult
 and more time consuming than simple readers for those formats would
@@ -73,5 +73,5 @@ format anyway so the utility of using libelf becomes questionable.
 Your author also posits that the python extention necessary to
 interface with any libelf impementation, (much less one which can work
 with multiple installations), is more work to create and maintain than
-a pure python library which simply reads elf format itself.  That's
-the gamble he's making by writing this library.
+a pure python library which reads elf format itself.  That's the
+gamble he's making by writing this library.
