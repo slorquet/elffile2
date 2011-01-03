@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <30-Dec-2010 12:45:03 PST by rich@noir.com>
+# Time-stamp: <02-Jan-2011 18:36:45 PST by rich@noir.com>
 
 import os
 
@@ -41,6 +41,10 @@ setup(
         'coding',
     ],
     py_modules=['elffle'],
+    scripts = [
+    	'objdump.py',
+        'objcmp.py',
+        ],
     test_suite='nose.collector',
     requires=[
     ],
