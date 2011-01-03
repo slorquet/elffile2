@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <02-Jan-2011 19:21:45 PST by rich@noir.com>
+# Time-stamp: <02-Jan-2011 19:36:47 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -346,7 +346,7 @@ class ElfFile(StructBase):
 
     fileHeader = None
     """
-    A :py:class:`ElfFileHeader` represeing the byte order and word
+    A :py:class:`ElfFileHeader` representing the byte order and word
     size dependent portion of the ELF format file header.
     """
 

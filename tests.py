@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <02-Jan-2011 15:02:32 PST by rich@noir.com>
+# Time-stamp: <02-Jan-2011 19:31:41 PST by rich@noir.com>
 
 """
 Tests for elffile.
@@ -23,11 +23,8 @@ import glob
 import sys
 import os
 import mmap
-import pprint
 
 import elffile
-
-pp = pprint.PrettyPrinter(width=132)
 
 def testOpen():
     for filename in glob.glob(os.path.join('testfiles', '*', '*.o')):
