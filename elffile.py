@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <02-Jan-2011 15:00:19 PST by rich@noir.com>
+# Time-stamp: <02-Jan-2011 19:21:45 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -218,7 +218,6 @@ class ElfFileIdent(StructBase):
         return self
 
     def pack_into(self, block, offset=0):
-
         self.coder.pack_into(block, offset, self.magic, self.elfClass,
                              self.elfData, self.fileVersion,
                              self.osabi, self.abiversion)
@@ -232,7 +231,8 @@ class ElfFileIdent(StructBase):
                         self.abiversion))
 
     def __eq__(self, other):
-        return (self.coder == other.coder
+        return (isinstance(other, self.__class__)
+                and self.coder == other.coder
                 and self.magic == other.magic
                 and self.elfClass == other.elfClass
                 and self.elfData == other.elfData
@@ -240,6 +240,18 @@ class ElfFileIdent(StructBase):
                 and self.osabi == other.osabi
                 and self.abiversion == other.abiversion)
 
+    def _list_encode(self):
+        return (self.__class__.__name__,
+                hex(id(self)),
+                {
+                    'coder': self.coder,
+                    'magic': self.magic,
+                    'elfClass': ElfClass.bycode[self.elfClass].name,
+                    'elfData': ElfData.bycode[self.elfData].name,
+                    'fileVersion': self.fileVersion,
+                    'osabi': self.osabi,
+                    'abiversion': self.abiversion,
+                })
 
 class ElfClass(coding.Coding):
     """
@@ -580,12 +592,33 @@ class ElfFile(StructBase):
         return x[section.nameoffset:x.find('\0', section.nameoffset)]
 
     def __eq__(self, other):
+        """
+        .. todo:: it would not be difficult to break up the string
+            table, sort, and compare the results.  But then we'll also
+            need a way to stub out the embedded path names.
+
+        .. todo:: there's an inherent difference between __eq__ and
+            trying to determine whether two object files are "close enough".
+            These should be separate functions.  Perhaps cmp?
+        """
+
+        if not isinstance(other, self.__class__):
+            return False
+
         if (self.fileIdent != other.fileIdent
             or self.fileHeader != other.fileHeader):
             return False
 
         # FIXME: need to handle order independence
         for this, that in zip(self.sectionHeaders, other.sectionHeaders):
+            # on x86_64 linux, anyway
+            if (this.name == '.rela.debug_info' # x86_64 linux rela
+                or this.name == '.debug_str'    # x86_64 linux rela
+                or this.name == '.note.gnu.build-id' # x86_64 linux dyn
+                or this.name == '.debug_info' # x86_64 linux dyn
+                ):
+                continue
+
             if this != that:
                 return False
 
@@ -594,6 +627,16 @@ class ElfFile(StructBase):
     def __repr__(self):
         return ('<{0}@{1}: name=\'{2}\', fileIdent={3}, fileHeader={4}>'
                 .format(self.__class__.__name__, hex(id(self)), self.name, self.fileIdent, self.fileHeader))
+
+    def _list_encode(self):
+        return (self.__class__.__name__,
+                hex(id(self)),
+                {
+                    'name': self.name,
+                    'fileIdent': self.fileIdent._list_encode(),
+                    'fileHeader': self.fileHeader._list_encode(),
+                    'sectionHeaders': [sh._list_encode() for sh in self.sectionHeaders]
+                })
 
 
 class ElfFileHeader(StructBase):
@@ -725,7 +768,8 @@ class ElfFileHeader(StructBase):
         return self
 
     def __eq__(self, other):
-        return (self.type == other.type
+        return (isinstance(other, self.__class__)
+                and self.type == other.type
                 and self.machine == other.machine
                 and self.version == other.version
                 and self.entry == other.entry
@@ -748,6 +792,25 @@ class ElfFileHeader(StructBase):
                         self.version, hex(self.entry), self.phoff, self.shoff,
                         hex(self.flags), self.ehsize, self.phnum, self.shentsize,
                         self.shnum, self.shstrndx))
+
+    def _list_encode(self):
+        return (self.__class__.__name__,
+                hex(id(self)),
+                {
+                    'type': ET.bycode[self.type].name,
+                    'machine': EM.bycode[self.machine].name,
+                    'version': self.version,
+                    'entry': hex(self.entry),
+                    'phoff': self.phoff,
+                    'shoff': self.shoff,
+                    'flags': hex(self.flags),
+                    'ehsize': self.ehsize,
+                    'phnum': self.phnum,
+                    'shentsize': self.shentsize,
+                    'shnum': self.shnum,
+                    'shstrndx': self.shstrndx,
+                })
+
 
 class ElfFileHeader32b(ElfFileHeader):
     """
@@ -1077,7 +1140,8 @@ class ElfSectionHeader(StructBase):
         return self
 
     def __eq__(self, other):
-        return (self.nameoffset == other.nameoffset
+        return (isinstance(other, self.__class__)
+                and self.nameoffset == other.nameoffset
                 and self.type == other.type
                 and self.flags == other.flags
                 and self.addr == other.addr
@@ -1094,9 +1158,25 @@ class ElfSectionHeader(StructBase):
         return ('<{0}@{1}: name=\'{2}\', type={3},'
                 ' flags={4}, addr={5}, offset={6}, section_size={7},'
                 ' link={8}, info={9}, addralign={10}, entsize={11}>'
-                .format(self.__class__.__name__, hex(id(self)), self.name, hex(self.type),
+                .format(self.__class__.__name__, hex(id(self)), self.name,
+                        SHT.bycode[self.type] if self.type in SHT.bycode else hex(self.type),
                         hex(self.flags), hex(self.addr), self.offset, self.section_size,
                         self.link, self.info, self.addralign, self.entsize))
+
+    def _list_encode(self):
+        return (self.__class__.__name__,
+                hex(id(self)),
+                {
+                    'name': self.name,
+                    'type': SHT.bycode[self.type].name if self.type in SHT.bycode else self.type,
+                    'flags': hex(self.flags),
+                    'offset': self.offset,
+                    'section_size': self.section_size,
+                    'link': self.link,
+                    'info': self.info,
+                    'addralign': self.addralign,
+                    'entsize': self.entsize,
+                })
 
 class ElfSectionHeader32b(ElfSectionHeader):
     """
@@ -1388,6 +1468,4 @@ class ElfProgramHeader64b(ElfProgramHeader64):
 
 class ElfProgramHeader64l(ElfProgramHeader64):
     coder = struct.Struct(b'<IIQQQQQQ')
-
-### MARKER
 
