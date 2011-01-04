@@ -4,12 +4,15 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <02-Jan-2011 19:46:48 PST by rich@noir.com>
+# Time-stamp: <03-Jan-2011 17:09:55 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
 <http://en.wikipedia.org/wiki/Executable_and_Linkable_Format>`_.
 Elffile is pure `python <http://python.org>`_ so installation is easy.
+
+.. note:: while this library uses some classes as abstract base
+    classes, it does not use :py:mod:`abc`.
 
 .. todo:: need a "copy" method
 
@@ -227,8 +230,9 @@ class ElfFileIdent(StructBase):
     def __repr__(self):
         return ('<{0}@{1}: coder={2}, magic=\'{3}\', elfClass={4}, elfData={5}, fileVersion={6}, osabi={7}, abiversion={8}>'
                 .format(self.__class__.__name__, hex(id(self)), self.coder, self.magic,
-                        self.elfClass, self.elfData, self.fileVersion, self.osabi,
-                        self.abiversion))
+                        ElfClass.bycode[self.elfClass] if self.elfClass in ElfClass.bycode else self.elfClass,
+                        ElfData.bycode[self.elfData] if self.elfData in ElfData.bycode else self.elfData,
+                        self.fileVersion, self.osabi, self.abiversion))
 
     def __eq__(self, other):
         return (isinstance(other, self.__class__)
@@ -266,6 +270,7 @@ class ElfClass(coding.Coding):
 ElfClass('ELFCLASSNONE', 0, 'Invalid class')
 ElfClass('ELFCLASS32', 1, '32-bit objects')
 ElfClass('ELFCLASS64', 2, '64-bit objects')
+ElfClass('ELFCLASSNUM', 3, '')          # from libelf
 
 class ElfData(coding.Coding):
     """
@@ -280,6 +285,7 @@ class ElfData(coding.Coding):
 ElfData('ELFDATANONE', 0, 'Invalid data encoding')
 ElfData('ELFDATA2LSB', 1, 'least significant byte first')
 ElfData('ELFDATA2MSB', 2, 'most significant byte first')
+ElfData('ELFDATANUM', 3, '')
 
 class EV(coding.Coding):
     """
@@ -291,6 +297,7 @@ class EV(coding.Coding):
 
 EV('EV_NONE', 0, 'Invalid version')
 EV('EV_CURRENT', 1, 'Current version')
+EV('EV_NUM', 2, '')
 
 class ElfOsabi(coding.Coding):
     """
@@ -301,8 +308,10 @@ class ElfOsabi(coding.Coding):
     This is a subclass of :py:class:`coding.Coding` which codes :py:attr:`ElfFileIdent.osabi`.
     """
     bycode = byname = {}
+    overload_codes = True
 
 ElfOsabi('ELFOSABI_NONE', 0, 'No extensions or unspecified')
+ElfOsabi('ELFOSABI_SYSV', 0, 'No extensions or unspecified')
 ElfOsabi('ELFOSABI_HPUX', 1, 'Hewlett-Packard HP-UX')
 ElfOsabi('ELFOSABI_NETBSD', 2, 'NetBSD')
 ElfOsabi('ELFOSABI_LINUX', 3, 'Linux')
@@ -317,6 +326,9 @@ ElfOsabi('ELFOSABI_OPENVMS', 13, 'Open VMS')
 ElfOsabi('ELFOSABI_NSK', 14, 'Hewlett-Packard Non-Stop Kernel')
 ElfOsabi('ELFOSABI_AROS', 15, 'Amiga Research OS')
 ElfOsabi('ELFOSABI_FENIXOS', 16, 'The FenixOS highly scalable multi-core OS')
+ElfOsabi('ELFOSABI_ARM_EABI', 64, 'ARM EABI')
+ElfOsabi('ELFOSABI_ARM', 97, 'ARM')
+ElfOsabi('ELFOSABI_STANDALONE', 255, 'Standalone (embedded) application')
 
 class ElfFile(StructBase):
     """
@@ -430,45 +442,79 @@ class ElfFile(StructBase):
         self.programHeaders = []
 
     def unpack_from(self, block, offset=0):
+        """
+        Unpack an entire file.
+
+        .. todo:: I don't understand whether segments overlap sections
+            or not.
+        """
+
+        self._unpack_fileIdent(block, offset)
+        self._unpack_file_header(block, offset)
+        self._unpack_section_headers(block, offset)
+        self._unpack_sections(block, offset)
+        self._unpack_section_names()
+        self._unpack_program_headers(block, offset)
+        #self._unpack_segments(block, offset)
+
+        return self
+
+
+    def _unpack_fileIdent(self, block, offset):
         if not self.fileIdent:
             self.fileIdent = ElfFileIdent()
 
         self.fileIdent.unpack_from(block, offset)
+        
 
+    def _unpack_file_header(self, block, offset):
         if not self.fileHeader:
             self.fileHeader = self.fileHeaderClass()
 
         self.fileHeader.unpack_from(block, offset + self.fileIdent.size)
+        
 
+    def _unpack_section_headers(self, block, offset):
         # section headers
         if self.fileHeader.shoff != 0:
             sectionCount = self.fileHeader.shnum
 
-            self.sectionHeaders.append(self.sectionHeaderClass().unpack_from(block, self.fileHeader.shoff))
+            self.sectionHeaders.append(self.sectionHeaderClass().unpack_from(block, offset + self.fileHeader.shoff))
 
             if sectionCount == 0:
                 sectionCount = self.sectionHeaders[0].section_size
                 
             for i in xrange(1, sectionCount):
                 self.sectionHeaders.append(self.sectionHeaderClass().unpack_from(block,
-                                                                            self.fileHeader.shoff
+                                                                            offset + self.fileHeader.shoff
                                                                             + (i * self.fileHeader.shentsize)))
 
+    def _unpack_sections(self, block, offset):
+        for sh in self.sectionHeaders:
+            sh.content = block[offset + sh.offset:offset + sh.offset + sh.section_size] # section contents are copied
+
+
+    def _unpack_section_names(self):
         # little tricky here - can't read section names until after
         # that section has been read.  So effectively this is two pass.
 
         for section in self.sectionHeaders:
             section.name = self.sectionName(section)
 
-        # # program headers
-        # if self.fileHeader.phoff == 0:
-        #     self.programHeaders == []
-        # else:
-        #     for i in xrange(self.fileHeader.phnum):
-        #         self.programHeaders.append(programHeaderClass().unpack_from(self.block,
-        #                                                                self.fileHeader.phoff + (i * self.fileHeader.phentsize)))
 
-        return self
+    def _unpack_program_headers(self, block, offset):
+        if self.fileHeader.phoff != 0:
+            segmentCount = self.fileHeader.phnum
+
+            self.programHeaders.append(self.programHeaderClass().unpack_from(block, offset + self.fileHeader.phoff))
+
+            if segmentCount == ElfProgramHeader.PN_XNUM:
+                segmentCount = self.sectionHeaders[0].info
+
+            for i in xrange(1, segmentCount):
+                self.programHeaders.append(self.programHeaderClass().unpack_from(block,
+                                                                                 offset + self.fileHeader.phoff
+                                                                                 + (i * self.fileHeader.phentsize)))
 
     def pack_into(self, block, offset=0):
         """
@@ -573,6 +619,9 @@ class ElfFile(StructBase):
     def _pack_section_headers(self, block, offset):
         """
         Pack the section header table.
+
+        .. todo:: first section header is reserved and should be all
+            zeros.  Need to verify this and/or force one.
         """
         shiter = zip(range(0, len(self.sectionHeaders)), self.sectionHeaders)
         for i, sh in shiter:
@@ -589,7 +638,7 @@ class ElfFile(StructBase):
         :param :py:class:`ElfSectionHeader` section:
         """
         x = self.sectionHeaders[self.fileHeader.shstrndx].content
-        return x[section.nameoffset:x.find('\0', section.nameoffset)]
+        return x[section.nameoffset:x.find(b'\0', section.nameoffset)]
 
     def __eq__(self, other):
         """
@@ -635,7 +684,8 @@ class ElfFile(StructBase):
                     'name': self.name,
                     'fileIdent': self.fileIdent._list_encode(),
                     'fileHeader': self.fileHeader._list_encode(),
-                    'sectionHeaders': [sh._list_encode() for sh in self.sectionHeaders]
+                    'sectionHeaders': [sh._list_encode() for sh in self.sectionHeaders],
+                    'programHeaders': [ph._list_encode() for ph in self.programHeaders],
                 })
 
 
@@ -855,6 +905,7 @@ ET('ET_REL', 1, 'Relocatable file')
 ET('ET_EXEC', 2, 'Executable file')
 ET('ET_DYN', 3, 'Shared object file')
 ET('ET_CORE', 4, 'Core file')
+ET('ET_NUM', 5, '')
 ET('ET_LOOS', 0xfe00, 'Operating system-specific')
 ET('ET_HIOS', 0xfeff, 'Operating system-specific')
 ET('ET_LOPROC', 0xff00, 'Processor-specific')
@@ -1112,15 +1163,9 @@ class ElfSectionHeader(StructBase):
     """
 
     def unpack_from(self, block, offset=0):
-        """
-        .. note:: this is a special case.  *block* here must be the
-            entire file or we won't know how to find our content.
-        """
         (self.nameoffset, self.type, self.flags, self.addr,
          self.offset, self.section_size, self.link, self.info,
          self.addralign, self.entsize) = self.coder.unpack_from(block, offset)
-
-        self.content = block[self.offset:self.offset + self.section_size] # section contents are copied
 
         return self
 
@@ -1218,7 +1263,9 @@ SHN('SHN_UNDEF', 0, 'marks an undefined, missing, irrelevant, or'
     ' otherwise meaningless section reference')
 SHN('SHN_LORESERVE', 0xff00, 'specifies the lower bound of the range'
     ' of reserved indexes')
+SHN('SHN_BEFORE', 0xff00, 'Order section before all others (Solaris).')
 SHN('SHN_LOPROC', 0xff00, '')
+SHN('SHN_AFTER', 0xff01, 'Order section after all others (Solaris).')
 SHN('SHN_HIPROC', 0xff1f, '')
 SHN('SHN_LOOS', 0xff20, '')
 SHN('SHN_HIOS', 0xff3f, '')
@@ -1243,6 +1290,7 @@ class SHT(coding.Coding):
     :py:attr:`ElfSectionHeader.type`.
     """
     bycode = byname = {}
+    overload_codes = True
 
 SHT('SHT_NULL', 0, 'marks the section header as inactive; it does not have an'
     ' associated section. Other members of the section header have undefined values.')
@@ -1272,6 +1320,18 @@ SHT('SHT_SYMTAB_SHNDX', 18, 'section is associated with a section of type'
     ' SHT_SYMTAB and is required if any of the section header indexes referenced'
     ' by that symbol table contain the escape value SHN_XINDEX')
 SHT('SHT_LOOS', 0x60000000, '')
+SHT('SHT_GNU_ATTRIBUTES', 0x6ffffff5, 'Object attributes.')
+SHT('SHT_GNU_HASH', 0x6ffffff6, 'GNU-style hash table.')
+SHT('SHT_GNU_LIBLIST', 0x6ffffff7, 'Prelink library lis')
+SHT('SHT_CHECKSUM', 0x6ffffff8, 'Checksum for DSO content.')
+SHT('SHT_LOSUNW', 0x6ffffffa, 'Sun-specific low bound.')
+SHT('SHT_SUNW_move', 0x6ffffffa, 'efine SHT_SUNW_COMDAT')
+SHT('SHT_SUNW_COMDAT', 0x6ffffffb, '')
+SHT('SHT_SUNW_syminfo', 0x6ffffffc, '')
+SHT('SHT_GNU_verdef', 0x6ffffffd, 'Version definition section.')
+SHT('SHT_GNU_verneed', 0x6ffffffe, 'Version needs section.')
+SHT('SHT_GNU_versym', 0x6fffffff, 'Version symbol table.')
+SHT('SHT_HISUNW', 0x6fffffff, 'Sun-specific high bound.')
 SHT('SHT_HIOS', 0x6fffffff, '')
 SHT('SHT_LOPROC', 0x70000000, '')
 SHT('SHT_HIPROC', 0x7fffffff, '')
@@ -1308,42 +1368,265 @@ SHF('SHF_MASKOS', 0x0ff00000, 'All bits included in this mask are reserved'
     ' for operating system-specific semantics')
 SHF('SHF_MASKPROC', 0xf0000000, 'All bits included in this mask are reserved'
     ' for processor-specific semantics')
+SHF('SHF_ORDERED', (1 << 30), 'Special ordering requirement (Solaris).')
+SHF('SHF_EXCLUDE', (1 << 31), 'Section is excluded unless referenced or allocated (Solaris).')
+
+class ElfProgramHeader(StructBase):
+    """
+    This abstract base class corresponds to a `program header
+    <http://www.sco.com/developers/gabi/latest/ch5.pheader.html>`_.
+    
+    Most attributes are :py:class:`int`'s.  Some have encoded meanings
+    which can be decoded with the accompanying
+    :py:class:`coding.Coding` subclasses.
+
+    This abstract base class works in tight concert with it's
+    subclasses: :py:class:`ElfProgramHeader32b`,
+    :py:class:`ElfProgramHeader32l`, :py:class:`ElfProgramHeader64b`,
+    and :py:class:`ElfProgramHeader64l`.  This base class sets useless
+    defaults and includes any byte order and word size independent
+    methods while the subclasses define byte order and word size
+    dependent methods.
+    """
+
+    PN_XNUM = 0xffff
+    """
+    Program header overflow number.
+    """
+
+    type = None
+    """
+    Segment type encoded with :py:class:`PT`.
+    """
+
+    offset = None
+    """
+    Offset in bytes from the beginning of the file to the start of this segment.
+    """
+
+    vaddr = None
+    """
+    Virtual address at which this segment will reside in memory when loaded to run.
+    """
+
+    paddr = None
+    """
+    Physical address in memory, when physical addresses are used.
+    """
+
+    filesz = None
+    """
+    Segment size in bytes in file.
+    """
+
+    memsz = None
+    """
+    Segment size in bytes when loaded into memory.  Must be at least
+    :py:attr:`ElfProgramHeader.filesz` or greater.  Extra space is
+    zero'd out.
+    """
+
+    flags = None
+    """
+    Flags for the segment.  Endoded using :py:class:`PF`.
+    """
+
+    align = None
+    """
+    Alignment of both segments in memory as well as in file.
+    """
+
+    def __eq__(self, other):
+        return (isinstance(other, self.__class__)
+                and self.type == other.type
+                and self.offset == other.offset
+                and self.vaddr == other.vaddr
+                and self.paddr == other.paddr
+                and self.filesz == other.filesz
+                and self.memsz == other.memsz
+                and self.flags == other.flags
+                and self.align == other.align)
+
+    def __repr__(self):
+        return ('<{0}@{1}: type={2},'
+                ' offset={3}, vaddr={4}, paddr={5},'
+                ' filesz={6}, memsz={7}, flags={8}, align=9{}>'
+                .format(self.__class__.__name__, hex(id(self)),
+                        PT.bycode[self.type].name if self.type in PT.bycode else self.type,
+                        self.offset, hex(self.vaddr), hex(self.paddr),
+                        self.filesz, self.memsz, hex(self.flags), self.align))
+
+    def _list_encode(self):
+        return (self.__class__.__name__,
+                hex(id(self)),
+                {
+                    'type': PT.bycode[self.type].name if self.type in PT.bycode else self.type,
+                    'offset': self.offset,
+                    'vaddr': hex(self.vaddr),
+                    'paddr': hex(self.paddr),
+                    'filesz': self.filesz,
+                    'memsz': self.memsz,
+                    'flags': hex(self.flags),
+                    'align': self.align,
+                })
+
+class PT(coding.Coding):
+    """
+    Encodes the segment type as recorded in the `program header
+    <http://www.sco.com/developers/gabi/latest/ch5.pheader.html>`_.
+
+    This is a subclass of :py:class:`coding.Coding` and encodes
+    :py:attr:`ElfProgramHeader.type`.
+    """
+    bycode = byname = {}
+    overload_codes = True
+
+PT('PT_NULL', 0, 'array element is unused')
+PT('PT_LOAD', 1, 'array element specifies a loadable segment')
+PT('PT_DYNAMIC', 2, 'array element specifies dynamic linking information')
+PT('PT_INTERP', 3, 'array element specifies the location and size'
+   ' of a null-terminated path name to invoke as an interpreter')
+PT('PT_NOTE', 4, 'array element specifies the location and size of'
+   ' auxiliary information')
+PT('PT_SHLIB', 5, 'segment type is reserved')
+PT('PT_PHDR', 6, 'specifies the location and size of the program'
+   ' header table itself')
+PT('PT_TLS', 7, 'array element specifies the Thread-Local Storage template')
+PT('PT_LOOS', 0x60000000, '')
+PT('PT_GNU_EH_FRAME', 0x6474e550, 'GCC .eh_frame_hdr segment')
+PT('PT_GNU_STACK', 0x6474e551, 'Indicates stack executability')
+PT('PT_GNU_RELRO', 0x6474e552, 'Read only after relocation')
+PT('PT_LOSUNW', 0x6ffffffa, '')
+PT('PT_SUNWBSS', 0x6ffffffa, 'Sun Specific segment')
+PT('PT_SUNWSTACK', 0x6ffffffb, 'Stack segment')
+PT('PT_HISUNW', 0x6fffffff, '')
+PT('PT_HIOS', 0x6fffffff, '')
+PT('PT_LOPROC', 0x70000000, '')
+PT('PT_HIPROC', 0x7fffffff, '')
+
+
+class PF(coding.Coding):
+    """
+    Encodes the segment flags as recorded in the `program header
+    <http://www.sco.com/developers/gabi/latest/ch5.pheader.html>`_.
+
+    This is a subclass of :py:class:`coding.Coding` and encodes
+    :py:attr:`ElfProgramHeader.flags`.
+    """
+
+    bycode = byname = {}
+    
+PF('PF_X', 0x1, 'Execute')
+PF('PF_W', 0x2, 'Write')
+PF('PF_R', 0x4, 'Read')
+PF('PF_MASKOS', 0x0ff00000, 'Unspecified')
+PF('PF_MASKPROC', 0xf0000000, 'Unspecified')
+
+
+class ElfProgramHeader32(ElfProgramHeader):
+    """
+    32 vs 64 bit files have differing element orders.  This class
+    represents the 32 bit element order.  A subclass of
+    :py:class:`ElfProgramHeader`.
+    """
+
+    def unpack_from(self, block, offset=0):
+        (self.type, self.offset, self.vaddr, self.paddr,
+         self.filesz, self.memsz, self.flags, self.align) = self.coder.unpack_from(block, offset)
+
+        return self
+
+    def pack_into(self, block, offset=0):
+        self.coder.pack_into(block, offset,
+                             self.type, self.offset, self.vaddr, self.paddr,
+                             self.filesz, self.memsz, self.flags, self.align)
+
+        return self
+
+class ElfProgramHeader64(ElfProgramHeader):
+    """
+    32 vs 64 bit files have differing element orders.  This class
+    represents the 64 bit element order.  A subclass of
+    :py:class:`ElfProgramHeader`.
+    """
+
+    def unpack_from(self, block, offset=0):
+        (self.type, self.flags, self.offset, self.vaddr,
+         self.paddr, self.filesz, self.memsz, self.align) = self.coder.unpack_from(block, offset)
+
+        return self
+
+    def pack_into(self, block, offset=0):
+        self.coder.pack_into(block, offset,
+                             self.type, self.flags, self.offset, self.vaddr,
+                             self.paddr, self.filesz, self.memsz, self.align)
+
+        return self
+
+
+class ElfProgramHeader32b(ElfProgramHeader32):
+    """
+    A subclass of :py:class:`ElfProgramHeader32`.  Represents big
+    endian byte order.
+    """
+    coder = struct.Struct(b'>IIIIIIII')
+
+class ElfProgramHeader32l(ElfProgramHeader32):
+    """
+    A subclass of :py:class:`ElfProgramHeader32`.  Represents little
+    endian byte order.
+    """
+    coder = struct.Struct(b'<IIIIIIII')
+
+class ElfProgramHeader64b(ElfProgramHeader64):
+    """
+    A subclass of :py:class:`ElfProgramHeader64`.  Represents big
+    endian byte order.
+    """
+    coder = struct.Struct(b'>IIQQQQQQ')
+
+class ElfProgramHeader64l(ElfProgramHeader64):
+    """
+    A subclass of :py:class:`ElfProgramHeader64`.  Represents little
+    endian byte order.
+    """
+    coder = struct.Struct(b'<IIQQQQQQ')
 
 class ElfFile32b(ElfFile):
     """
-    A subclass of :py:class:`ElfFile`.  This one represents 32-bit,
-    big-endian files.
+    A subclass of :py:class:`ElfFile`.  Represents 32-bit, big-endian
+    files.
     """
     fileHeaderClass = ElfFileHeader32b
     sectionHeaderClass = ElfSectionHeader32b
-    #programHeaderClass = ElfSectionHeader32b
+    programHeaderClass = ElfProgramHeader32b
 
 class ElfFile32l(ElfFile):
     """
-    A subclass of :py:class:`ElfFile`.  This one represents 32-bit,
+    A subclass of :py:class:`ElfFile`.  Represents 32-bit,
     little-endian files.
     """
     fileHeaderClass = ElfFileHeader32l
     sectionHeaderClass = ElfSectionHeader32l
-    #programHeaderClass = ElfSectionHeader32l
+    programHeaderClass = ElfProgramHeader32l
 
 class ElfFile64b(ElfFile):
     """
-    A subclass of :py:class:`ElfFile`.  This one represents 64-bit,
-    big-endian files.
+    A subclass of :py:class:`ElfFile`.  Represents 64-bit, big-endian
+    files.
     """
     fileHeaderClass = ElfFileHeader64b
     sectionHeaderClass = ElfSectionHeader64b
-    # programHeaderClass = ElfSectionHeader64b
+    programHeaderClass = ElfProgramHeader64b
 
 class ElfFile64l(ElfFile):
     """
-    A subclass of :py:class:`ElfFile`.  This one represents 64-bit,
+    A subclass of :py:class:`ElfFile`.  Represents 64-bit,
     little-endian files.
     """
     fileHeaderClass = ElfFileHeader64l
     sectionHeaderClass = ElfSectionHeader64l
-    # programHeaderClass = ElfSectionHeader64l
+    programHeaderClass = ElfProgramHeader64l
 
 _fileEncodingDict = {
     1: {
@@ -1365,9 +1648,6 @@ appropriate subclass to represent a file based on a
 :py:class:`ElfFileIdent`.
 """
 
-### MARKER - above is doc reviewed, below is just coded.
-
-
 class GRP(coding.Coding):
     bycode = byname = {}
 
@@ -1376,95 +1656,4 @@ GRP('GRP_MASKOS', 0x0ff00000, 'All bits included in this mask are'
     ' reserved for operating system-specific semantics')
 GRP('GRP_MASKPROC', 0xf0000000, 'All bits included in this mask'
     ' are reserved for processor-specific semantics')
-
-class PT(coding.Coding):
-    bycode = byname = {}
-
-PT('PT_NULL', 0, 'array element is unused')
-PT('PT_LOAD', 1, 'array element specifies a loadable segment')
-PT('PT_DYNAMIC', 2, 'array element specifies dynamic linking information')
-PT('PT_INTERP', 3, 'array element specifies the location and size'
-   ' of a null-terminated path name to invoke as an interpreter')
-PT('PT_NOTE', 4, 'array element specifies the location and size of'
-   ' auxiliary information')
-PT('PT_SHLIB', 5, 'segment type is reserved')
-PT('PT_PHDR', 6, 'specifies the location and size of the program'
-   ' header table itself')
-PT('PT_TLS', 7, 'array element specifies the Thread-Local Storage template')
-PT('PT_LOOS', 0x60000000, '')
-PT('PT_HIOS', 0x6fffffff, '')
-PT('PT_LOPROC', 0x70000000, '')
-PT('PT_HIPROC', 0x7fffffff, '')
-
-class PF(coding.Coding):
-    bycode = byname = {}
-
-PF('PF_X', 0x1, 'Execute')
-PF('PF_W', 0x2, 'Write')
-PF('PF_R', 0x4, 'Read')
-PF('PF_MASKOS', 0x0ff00000, 'Unspecified')
-PF('PF_MASKPROC', 0xf0000000, 'Unspecified')
-
-
-
-class ElfProgramHeader(object):
-    coder = None
-
-    def __init__(self):
-        self.type = None
-        self.offset = None
-        self.vaddr = None
-        self.paddr = None
-        self.filesz = None
-        self.memsz = None
-        self.flags = None
-        self.align = None
-
-    def unpack_from(self, block, offset=0):
-        raise NotImplentedError
-
-    def pack_into(self, block, offset=0):
-        raise NotImplementedError
-
-# 32 vs 64 have differing element orders.
-class ElfProgramHeader32(ElfProgramHeader):
-    def unpack_from(self, block, offset=0):
-        (self.type, self.offset, self.vaddr, self.paddr,
-         self.filesz, self.memsz, self.flags, self.align) = self.coder.unpack_from(block, offset)
-
-        return self
-
-    def pack_into(self, block, offset=0):
-        self.coder.pack_into(block, offset,
-                             self.type, self.offset, self.vaddr, self.paddr,
-                             self.filesz, self.memsz, self.flags, self.align)
-
-        return self
-
-class ElfProgramHeader64(ElfProgramHeader):
-    def unpack_from(self, block, offset=0):
-        (self.type, self.flags, self.offset, self.vaddr,
-         self.paddr, self.filesz, self.memsz, self.align) = self.coder.unpack_from(block, offset)
-
-        return self
-
-    def pack_into(self, block, offset=0):
-        self.coder.pack_into(block, offset,
-                             self.type, self.flags, self.offset, self.vaddr,
-                             self.paddr, self.filesz, self.memsz, self.align)
-
-        return self
-
-# 8 items
-class ElfProgramHeader32b(ElfProgramHeader32):
-    coder = struct.Struct(b'>IIIIIIII')
-
-class ElfProgramHeader32l(ElfProgramHeader32):
-    coder = struct.Struct(b'<IIIIIIII')
-
-class ElfProgramHeader64b(ElfProgramHeader64):
-    coder = struct.Struct(b'>IIQQQQQQ')
-
-class ElfProgramHeader64l(ElfProgramHeader64):
-    coder = struct.Struct(b'<IIQQQQQQ')
 
