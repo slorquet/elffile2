@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <02-Jan-2011 18:39:14 PST by rich@noir.com>
+# Time-stamp: <03-Jan-2011 17:21:27 PST by rich@noir.com>
 
 """
 A covering script for :py:mod:`elffile`.  Compare object files.
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     x = elffile.open(name=args[0])
     y = elffile.open(name=args[1])
     
-    if x == y:
+    if x.close_enough(y):
         sys.exit()
 
     print('different')
