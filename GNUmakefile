@@ -3,7 +3,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <03-Jan-2011 18:20:18 PST by rich@noir.com>
+# Time-stamp: <03-Jan-2011 19:46:46 PST by rich@noir.com>
 
 # FIXME: is there a way to force dependencies to be installed before
 # building through distutils/setuptools/distribute?  Akin to "apt-get
@@ -126,6 +126,7 @@ docfiles := \
 	${docsrcdir}/index.rst \
 	${docsrcdir}/rationale.rst \
 	${docsrcdir}/reference.rst \
+	${docsrcdir}/quickstart.rst \
 
 ${doctrigger}: ${sphinx_egg} ${packagename}.py ${docfiles}
 	(cd docs && $(MAKE) html)
