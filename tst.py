@@ -23,5 +23,5 @@ for xname, yname in itertools.izip(filelist('one'), filelist('two')):
     x = elffile.open(name=xname)
     y = elffile.open(name=yname)
 
-    print('{0}: {1}'.format(xname, x == y))
+    print('{0}: {1}'.format(xname, x.close_enough(y)))
 
