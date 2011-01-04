@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <03-Jan-2011 19:56:23 PST by rich@noir.com>
+# Time-stamp: <03-Jan-2011 19:58:13 PST by rich@noir.com>
 
 import os
 
@@ -40,7 +40,7 @@ setup(
     install_requires=[
         'coding',
     ],
-    py_modules=['elffle'],
+    py_modules=['elffile'],
     scripts = [
     	'objdump.py',
         'objcmp.py',
