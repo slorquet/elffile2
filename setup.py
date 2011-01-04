@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <03-Jan-2011 17:42:11 PST by rich@noir.com>
+# Time-stamp: <03-Jan-2011 17:43:18 PST by rich@noir.com>
 
 import os
 
@@ -31,7 +31,7 @@ setup(
     description='A pure python library for reading and writing ELF format object filex.',
     license='MIT',
     keywords='elf object file',
-    url='http://bitbucket.org/krp/coding',
+    url='http://bitbucket.org/krp/elffile',
     long_description=read(os.path.join('README')),
     setup_requires=[
     	'nose>=1.0.0',
