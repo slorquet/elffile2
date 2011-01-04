@@ -3,7 +3,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <03-Jan-2011 17:49:15 PST by rich@noir.com>
+# Time-stamp: <03-Jan-2011 18:20:18 PST by rich@noir.com>
 
 # FIXME: is there a way to force dependencies to be installed before
 # building through distutils/setuptools/distribute?  Akin to "apt-get
@@ -32,7 +32,10 @@ endif
 endif
 
 vpython := python${pyver}
-#virtualenv := virtualenv5
+
+ifneq ($(findstring python3, ${vpython}),)
+virtualenv := virtualenv5
+endif
 
 venv := ${packagename}-dev
 pythonbin := ${venv}/bin
