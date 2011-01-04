@@ -1,10 +1,10 @@
-Time-stamp: <03-Jan-2011 19:26:02 PST by rich@noir.com>
- 
+.. Time-stamp: <03-Jan-2011 19:55:42 PST by rich@noir.com>
+
 Welcome to elffile!
 
 Elffile is a pure python implementation of a library which reads and
-writes ELF format object files
-<http://en.wikipedia.org/wiki/Executable_and_Linkable_Format>.
+writes `ELF format object files
+<http://en.wikipedia.org/wiki/Executable_and_Linkable_Format>`_
 
 Current features:
 
