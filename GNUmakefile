@@ -3,7 +3,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <02-Jan-2011 19:50:44 PST by rich@noir.com>
+# Time-stamp: <03-Jan-2011 17:49:15 PST by rich@noir.com>
 
 # FIXME: is there a way to force dependencies to be installed before
 # building through distutils/setuptools/distribute?  Akin to "apt-get
@@ -18,13 +18,13 @@ packagename := elffile
 #venvopts := --distribute
 venvsuffix := 
 
-ifeq (${unames},Darwin)
 pyver := 2.7
+
+ifeq (${unames},Darwin)
 virtualenv := /Library/Frameworks/Python.framework/Versions/${pyver}/bin/virtualenv
 #virtualenv := /usr/local/bin/virtualenv-${pyver}
 else
 ifeq (${unames},Linux)
-pyver := 2.6
 virtualenv := virtualenv
 else
 $(error Unrecognized system)
