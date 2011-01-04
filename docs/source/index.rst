@@ -29,9 +29,8 @@ Contents of this document:
 .. toctree::
    :maxdepth: 2
 
-   getting-started.rst
+   quickstart.rst
    reference.rst
-   architecture.rst
    rationale.rst
 
 Indices and tables
