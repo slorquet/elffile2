@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <03-Jan-2011 17:09:55 PST by rich@noir.com>
+# Time-stamp: <03-Jan-2011 17:30:07 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -143,6 +143,15 @@ class StructBase(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def close_enough(self, other):
+        """
+        This is a comparison similar to __eq__ except that here the
+        goal is to determine whether two objects are "close enough"
+        despite perhaps having been produced at different times in
+        different locations in the file system.
+        """
+        return self == other
+
 
 EI_NIDENT = 16
 """
@@ -243,6 +252,7 @@ class ElfFileIdent(StructBase):
                 and self.fileVersion == other.fileVersion
                 and self.osabi == other.osabi
                 and self.abiversion == other.abiversion)
+
 
     def _list_encode(self):
         return (self.__class__.__name__,
@@ -645,10 +655,27 @@ class ElfFile(StructBase):
         .. todo:: it would not be difficult to break up the string
             table, sort, and compare the results.  But then we'll also
             need a way to stub out the embedded path names.
+        """
 
-        .. todo:: there's an inherent difference between __eq__ and
-            trying to determine whether two object files are "close enough".
-            These should be separate functions.  Perhaps cmp?
+        if not isinstance(other, self.__class__):
+            return False
+
+        if (self.fileIdent != other.fileIdent
+            or self.fileHeader != other.fileHeader):
+            return False
+
+        # FIXME: need to handle order independence
+        for this, that in zip(self.sectionHeaders, other.sectionHeaders):
+            if this != that:
+                return False
+
+        return True
+
+    def close_enough(self, other):
+        """
+        .. todo:: it would not be difficult to break up the string
+            table, sort, and compare the results.  But then we'll also
+            need a way to stub out the embedded path names.
         """
 
         if not isinstance(other, self.__class__):
@@ -668,10 +695,11 @@ class ElfFile(StructBase):
                 ):
                 continue
 
-            if this != that:
+            if not this.close_enough(that):
                 return False
 
         return True
+
 
     def __repr__(self):
         return ('<{0}@{1}: name=\'{2}\', fileIdent={3}, fileHeader={4}>'
