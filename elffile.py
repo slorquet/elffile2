@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <03-Jan-2011 17:30:07 PST by rich@noir.com>
+# Time-stamp: <03-Jan-2011 18:55:13 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -26,6 +26,8 @@ __docformat__ = 'restructuredtext en'
 
 #__all__ = []
 
+import functools
+import io
 import mmap
 import operator
 import struct
@@ -74,7 +76,7 @@ def open(name=None, fileobj=None, map=None, block=None):
         map = mmap.mmap(fileobj.fileno(), 0, mmap.MAP_SHARED, mmap.PROT_READ)
 
     elif name:
-        fileobj = file(name, 'rb')
+        fileobj = io.open(name, 'rb')
 
     else:
         assert False
@@ -136,6 +138,8 @@ class StructBase(object):
             which to start packing
         """
         raise NotImplementedError
+
+    __hash__ = None
 
     def __eq__(self, other):
         raise NotImplementedError
@@ -494,7 +498,7 @@ class ElfFile(StructBase):
             if sectionCount == 0:
                 sectionCount = self.sectionHeaders[0].section_size
                 
-            for i in xrange(1, sectionCount):
+            for i in range(1, sectionCount):
                 self.sectionHeaders.append(self.sectionHeaderClass().unpack_from(block,
                                                                             offset + self.fileHeader.shoff
                                                                             + (i * self.fileHeader.shentsize)))
@@ -521,7 +525,7 @@ class ElfFile(StructBase):
             if segmentCount == ElfProgramHeader.PN_XNUM:
                 segmentCount = self.sectionHeaders[0].info
 
-            for i in xrange(1, segmentCount):
+            for i in range(1, segmentCount):
                 self.programHeaders.append(self.programHeaderClass().unpack_from(block,
                                                                                  offset + self.fileHeader.phoff
                                                                                  + (i * self.fileHeader.phentsize)))
@@ -584,7 +588,7 @@ class ElfFile(StructBase):
 
         # FIXME: could merge pointers to same strings and/or common suffixes.
 
-        section.section_size = (reduce(operator.__add__, [len(sh.name) for sh in self.sectionHeaders])
+        section.section_size = (functools.reduce(operator.__add__, [len(sh.name) for sh in self.sectionHeaders])
                                 + len(self.sectionHeaders) + 1)
 
         section.contents = bytearray(section.section_size)
