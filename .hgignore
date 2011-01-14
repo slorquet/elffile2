@@ -12,6 +12,7 @@ Makefile
 TAGS
 config.log
 config.status
+dist
 distribute-*.tar.gz
 docs/build
 elf32-examples
