@@ -3,7 +3,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <13-Jan-2011 19:53:40 PST by rich@noir.com>
+# Time-stamp: <13-Jan-2011 20:42:00 PST by rich@noir.com>
 
 # FIXME: is there a way to force dependencies to be installed before
 # building through distutils/setuptools/distribute?  Akin to "apt-get
@@ -22,7 +22,6 @@ pyver := 2.7
 
 ifeq (${unames},Darwin)
 virtualenv := /Library/Frameworks/Python.framework/Versions/${pyver}/bin/virtualenv
-#virtualenv := /usr/local/bin/virtualenv-${pyver}
 else
 ifeq (${unames},Linux)
 virtualenv := virtualenv
@@ -32,10 +31,6 @@ endif
 endif
 
 vpython := python${pyver}
-
-ifneq ($(findstring python3, ${vpython}),)
-virtualenv := virtualenv5
-endif
 
 venv := ${packagename}-dev
 pythonbin := ${venv}/bin
@@ -143,6 +138,6 @@ nosetests: develop ${nose_egg}
 test: ${python}
 	${setuppy} $@
 
-.PHONY: upload_docs
-upload_docs: ${doctrigger} 
-	${setuppy} $@
+.PHONY: upload_docs docs_upload
+docs_upload upload_docs: ${doctrigger} 
+	${setuppy} upload_docs
