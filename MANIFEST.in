@@ -1,0 +1,21 @@
+include cheat.el
+include distribute_setup.py
+include elffile.py
+include GNUmakefile
+include INSTALL
+include LICENSE
+include MANIFEST.in
+include NEWS
+include objcmp.py
+include objdump.py
+include README.rst
+include setup.cfg
+include setup.py
+include testfiles
+include tests.py
+include tst.py
+
+graft doc
+prune doc/build
+
+graft testfiles
