@@ -4,7 +4,7 @@
 # Copyright 2010 - 2011 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <27-Jan-2011 16:42:51 PST by rich@noir.com>
+# Time-stamp: <27-Jan-2011 18:20:49 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -670,7 +670,38 @@ class ElfFile(StructBase):
 
         # FIXME: need to handle order independence
         for this, that in zip(self.sectionHeaders, other.sectionHeaders):
+            if this.name in [
+                '.rel.text',
+                '.debug_info',
+                '.rel.debug_info',
+                '.debug_line',
+                '.rel.debug_line',
+                '.ARM.extab',
+                '.ARM.exidx',
+                '.rel.ARM.exidx',
+                '.rodata',
+                '.rodata.str1.4',
+                '.debug_frame',
+                '.rel.debug_frame',
+                '.debug_loc',
+                '.debug_pubnames',
+                '.rel.debug_pubnames',
+                '.debug_aranges',
+                '.rel.debug_aranges',
+                '.debug_ranges',
+                '.debug_str',
+                '.comment',
+                '.note.GNU-stack',
+                '.ARM.attributes',
+                '.shstrtab',
+                '.symtab',
+                '.strtab',
+                ]:
+                continue
+
             if this != that:
+                import sys
+                print('{0} differs from {1}'.format(this, that), file=sys.stderr)
                 return False
 
         return True
@@ -856,7 +887,7 @@ class ElfFileHeader(StructBase):
                 and self.version == other.version
                 and self.entry == other.entry
                 and self.phoff == other.phoff
-                and self.shoff == other.shoff
+                # and self.shoff == other.shoff
                 and self.flags == other.flags
                 and self.ehsize == other.ehsize
                 and self.phentsize == other.phentsize
