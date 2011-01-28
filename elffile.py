@@ -1,10 +1,10 @@
 #!/usr/bin/env python -3
 # -*- coding: utf-8 -*-
 #
-# Copyright 2010 K. Richard Pixley.
+# Copyright 2010 - 2011 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <03-Jan-2011 19:42:41 PST by rich@noir.com>
+# Time-stamp: <27-Jan-2011 16:42:51 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -179,7 +179,7 @@ class ElfFileIdent(StructBase):
 
     magic = None
     """
-    The magic 'number' which should be '\x1fELF' for all ELF format files. 
+    The magic 'number' which should be '\x7fELF' for all ELF format files. 
     """
 
     elfClass = None
@@ -216,7 +216,7 @@ class ElfFileIdent(StructBase):
     """
     A :py:class:`struct.Struct` (de)coder involving six fields:
 
-    * '\x1fELF', (Elf file magic number)
+    * '\x7fELF', (Elf file magic number)
     * ElfClass (32 vs 64-bit)
     * ElfData (endianness)
     * EV (file version)
