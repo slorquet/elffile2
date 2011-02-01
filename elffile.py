@@ -4,7 +4,7 @@
 # Copyright 2010 - 2011 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <27-Jan-2011 18:20:49 PST by rich@noir.com>
+# Time-stamp: <01-Feb-2011 12:13:42 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -670,35 +670,6 @@ class ElfFile(StructBase):
 
         # FIXME: need to handle order independence
         for this, that in zip(self.sectionHeaders, other.sectionHeaders):
-            if this.name in [
-                '.rel.text',
-                '.debug_info',
-                '.rel.debug_info',
-                '.debug_line',
-                '.rel.debug_line',
-                '.ARM.extab',
-                '.ARM.exidx',
-                '.rel.ARM.exidx',
-                '.rodata',
-                '.rodata.str1.4',
-                '.debug_frame',
-                '.rel.debug_frame',
-                '.debug_loc',
-                '.debug_pubnames',
-                '.rel.debug_pubnames',
-                '.debug_aranges',
-                '.rel.debug_aranges',
-                '.debug_ranges',
-                '.debug_str',
-                '.comment',
-                '.note.GNU-stack',
-                '.ARM.attributes',
-                '.shstrtab',
-                '.symtab',
-                '.strtab',
-                ]:
-                continue
-
             if this != that:
                 import sys
                 print('{0} differs from {1}'.format(this, that), file=sys.stderr)
@@ -722,12 +693,33 @@ class ElfFile(StructBase):
 
         # FIXME: need to handle order independence
         for this, that in zip(self.sectionHeaders, other.sectionHeaders):
-            # on x86_64 linux, anyway
-            if (this.name == '.rela.debug_info' # x86_64 linux rela
-                or this.name == '.debug_str'    # x86_64 linux rela
-                or this.name == '.note.gnu.build-id' # x86_64 linux dyn
-                or this.name == '.debug_info' # x86_64 linux dyn
-                ):
+            if this.name in [
+                '.ARM.attributes',
+                '.ARM.exidx',
+                '.ARM.extab',
+                '.comment',
+                '.debug_aranges',
+                '.debug_frame',
+                '.debug_info',
+                '.debug_line',
+                '.debug_loc',
+                '.debug_pubnames',
+                '.debug_ranges',
+                '.debug_str',
+                '.note.GNU-stack',
+                '.rel.ARM.exidx',
+                '.rel.debug_aranges',
+                '.rel.debug_frame',
+                '.rel.debug_info',
+                '.rel.debug_line',
+                '.rel.debug_pubnames',
+                '.rel.text',
+                '.rodata',
+                '.rodata.str1.4',
+                '.shstrtab',
+                '.strtab',
+                '.symtab',
+                ]:
                 continue
 
             if not this.close_enough(that):
