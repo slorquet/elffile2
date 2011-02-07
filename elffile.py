@@ -4,7 +4,7 @@
 # Copyright 2010 - 2011 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <07-Feb-2011 14:35:39 PST by rich@noir.com>
+# Time-stamp: <07-Feb-2011 15:04:31 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -258,6 +258,7 @@ class ElfFileIdent(StructBase):
                 and self.osabi == other.osabi
                 and self.abiversion == other.abiversion)
 
+    close_enough = __eq__
 
     def _list_encode(self):
         return (self.__class__.__name__,
@@ -686,8 +687,8 @@ class ElfFile(StructBase):
         if not isinstance(other, self.__class__):
             return False
 
-        if (self.fileIdent != other.fileIdent
-            or self.fileHeader != other.fileHeader):
+        if ((not self.fileIdent.close_enough(other.fileIdent))
+            or (not self.fileHeader.close_enough(other.fileHeader))):
             return False
 
         # FIXME: need to handle order independence
@@ -697,10 +698,14 @@ class ElfFile(StructBase):
                 or this.name == '.debug_str'    # x86_64 linux rela
                 or this.name == '.note.gnu.build-id' # x86_64 linux dyn
                 or this.name == '.debug_info' # x86_64 linux dyn
+                or this.name == '.debug_line' # debug lines contain file names
+                or this.type == SHT.byname['SHT_NOBITS'].code # Not sure what this is or why it differs
                 ):
                 continue
 
             if not this.close_enough(that):
+                import sys
+                print('section({0}) not close enough to section({1})'.format(this.name, that.name), file=sys.stdout)
                 return False
 
         return True
@@ -858,6 +863,21 @@ class ElfFileHeader(StructBase):
                 and self.entry == other.entry
                 and self.phoff == other.phoff
                 and self.shoff == other.shoff
+                and self.flags == other.flags
+                and self.ehsize == other.ehsize
+                and self.phentsize == other.phentsize
+                and self.phnum == other.phnum
+                and self.shentsize == other.shentsize
+                and self.shnum == other.shnum
+                and self.shstrndx == other.shstrndx)
+
+    def close_enough(self, other):
+        return (isinstance(other, self.__class__)
+                and self.type == other.type
+                and self.machine == other.machine
+                and self.version == other.version
+                and self.entry == other.entry
+                and self.phoff == other.phoff
                 and self.flags == other.flags
                 and self.ehsize == other.ehsize
                 and self.phentsize == other.phentsize
@@ -1223,6 +1243,19 @@ class ElfSectionHeader(StructBase):
                 and self.flags == other.flags
                 and self.addr == other.addr
                 and self.offset == other.offset
+                and self.section_size == other.section_size
+                and self.link == other.link
+                and self.info == other.info
+                and self.addralign == other.addralign
+                and self.entsize == other.entsize
+                and self.content == other.content)
+
+    def close_enough(self, other):
+        return (isinstance(other, self.__class__)
+                and self.nameoffset == other.nameoffset
+                and self.type == other.type
+                and self.flags == other.flags
+                and self.addr == other.addr
                 and self.section_size == other.section_size
                 and self.link == other.link
                 and self.info == other.info
