@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <02-Jan-2011 19:31:41 PST by rich@noir.com>
+# Time-stamp: <07-Feb-2011 15:07:56 PST by rich@noir.com>
 
 """
 Tests for elffile.
@@ -118,6 +118,10 @@ def testBogusEncoding():
     ident.elfData = 254
     elffile.ElfFile.encodedClass(ident)
 
+# def testTmp():
+#     left = elffile.open(name='~/Downloads/goodfork-left.so.0')
+#     right = elffile.open(name='~/Downloads/goodfork-right.so.0')
+#     assert_true(left.close_enough(right))
 
 if __name__ == '__main__':
     nose.main()
