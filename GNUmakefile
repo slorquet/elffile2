@@ -3,7 +3,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <13-Jan-2011 20:42:00 PST by rich@noir.com>
+# Time-stamp: <07-Feb-2011 14:45:00 PST by rich@noir.com>
 
 # FIXME: is there a way to force dependencies to be installed before
 # building through distutils/setuptools/distribute?  Akin to "apt-get
@@ -41,7 +41,7 @@ setuppy := ${activate} && python setup.py
 
 nose_egg := ${venv}/lib/${vpython}/site-packages/nose-1.0.0-py${pyver}.egg
 sphinx_egg := ${venv}/lib/${vpython}/site-packages/Sphinx-1.0.6-py${pyver}.egg
-coding_egg := ${venv}/lib/${vpython}/site-packages/coding-0.001-py${pyver}.egg
+coding_egg := ${venv}/lib/${vpython}/site-packages/coding-0.002-py${pyver}.egg
 
 ve = ${python} ${nose_egg} ${sphinx_egg}
 
@@ -75,7 +75,7 @@ clean: clean_docs
 	rm -rf ${venv} .stamp-virtualenv .stamp-apt build dist ${packagename}.egg-info ${packagename}/*.pyc apidocs *.egg *.pyc distribute-*.tar.gz
 
 .PHONY: check
-check: ${python} ${nose_egg}
+check: develop ${nose_egg}
 	#${activate} && nosetests
 	${setuppy} nosetests
 
@@ -88,7 +88,7 @@ bdist: ${ve}
 	${setuppy} bdist
 
 .PHONY: develop
-develop: ${venv}/lib/${vpython}/site-packages/${packagename}.egg-link
+develop: ${coding_egg} ${venv}/lib/${vpython}/site-packages/${packagename}.egg-link
 
 ${venv}/lib/${vpython}/site-packages/${packagename}.egg-link: ${python} ${coding_egg} ${nose_egg}
 	${setuppy} develop
