@@ -4,7 +4,7 @@
 # Copyright 2010 - 2011 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <27-Jan-2011 16:42:51 PST by rich@noir.com>
+# Time-stamp: <07-Feb-2011 14:35:39 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -30,6 +30,7 @@ import functools
 import io
 import mmap
 import operator
+import os
 import struct
 
 import coding
@@ -76,7 +77,7 @@ def open(name=None, fileobj=None, map=None, block=None):
         map = mmap.mmap(fileobj.fileno(), 0, mmap.MAP_SHARED, mmap.PROT_READ)
 
     elif name:
-        fileobj = io.open(name, 'rb')
+        fileobj = io.open(os.path.normpath(os.path.expanduser(name)), 'rb')
 
     else:
         assert False
