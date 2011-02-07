@@ -4,7 +4,7 @@
 # Copyright 2010 - 2011 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <07-Feb-2011 15:04:31 PST by rich@noir.com>
+# Time-stamp: <07-Feb-2011 15:16:36 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -673,6 +673,8 @@ class ElfFile(StructBase):
         # FIXME: need to handle order independence
         for this, that in zip(self.sectionHeaders, other.sectionHeaders):
             if this != that:
+                import sys
+                print('{0} differs from {1}'.format(this, that), file=sys.stderr)
                 return False
 
         return True
@@ -693,12 +695,34 @@ class ElfFile(StructBase):
 
         # FIXME: need to handle order independence
         for this, that in zip(self.sectionHeaders, other.sectionHeaders):
-            # on x86_64 linux, anyway
-            if (this.name == '.rela.debug_info' # x86_64 linux rela
-                or this.name == '.debug_str'    # x86_64 linux rela
-                or this.name == '.note.gnu.build-id' # x86_64 linux dyn
-                or this.name == '.debug_info' # x86_64 linux dyn
-                or this.name == '.debug_line' # debug lines contain file names
+            if (this.name in [
+                '.ARM.attributes',
+                '.ARM.exidx',
+                '.ARM.extab',
+                '.comment',
+                '.debug_aranges',
+                '.debug_frame',
+                '.debug_info',    # x86_64 linux dyn
+                '.debug_line',    # arm debug lines contain file names
+                '.debug_loc',
+                '.debug_pubnames',
+                '.debug_ranges',
+                '.debug_str',           # x86_64 linux rela
+                '.note.GNU-stack',
+                '.note.gnu.build-id',   # x86_64 linux dyn
+                '.rel.ARM.exidx',
+                '.rel.debug_aranges',
+                '.rel.debug_frame',
+                '.rel.debug_info',      # x86_64 linux rela
+                '.rel.debug_line',
+                '.rel.debug_pubnames',
+                '.rel.text',
+                '.rodata',
+                '.rodata.str1.4',
+                '.shstrtab',
+                '.strtab',
+                '.symtab',
+                ]
                 or this.type == SHT.byname['SHT_NOBITS'].code # Not sure what this is or why it differs
                 ):
                 continue
@@ -862,7 +886,7 @@ class ElfFileHeader(StructBase):
                 and self.version == other.version
                 and self.entry == other.entry
                 and self.phoff == other.phoff
-                and self.shoff == other.shoff
+                # and self.shoff == other.shoff
                 and self.flags == other.flags
                 and self.ehsize == other.ehsize
                 and self.phentsize == other.phentsize

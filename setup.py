@@ -4,7 +4,7 @@
 # Copyright 2010 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <13-Jan-2011 19:53:03 PST by rich@noir.com>
+# Time-stamp: <27-Jan-2011 18:22:40 PST by rich@noir.com>
 
 import os
 
@@ -25,7 +25,7 @@ def read(fname):
 
 setup(
     name='elffile',
-    version='0.002',
+    version='0.003',
     author='K. Richard Pixley',
     author_email='rich@noir.com',
     description='A pure python library for reading and writing ELF format object filex.',
