@@ -4,7 +4,7 @@
 # Copyright 2010 - 2011 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <07-Feb-2011 15:16:36 PST by rich@noir.com>
+# Time-stamp: <07-Feb-2011 15:43:36 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -708,6 +708,7 @@ class ElfFile(StructBase):
                 '.debug_pubnames',
                 '.debug_ranges',
                 '.debug_str',           # x86_64 linux rela
+                '.gnu_debuglink',       # arm: maybe time stamps?
                 '.note.GNU-stack',
                 '.note.gnu.build-id',   # x86_64 linux dyn
                 '.rel.ARM.exidx',
