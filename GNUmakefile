@@ -1,9 +1,9 @@
 #!/usr/bin/make -f
 #
-# Copyright 2010 K. Richard Pixley.
+# Copyright 2010 - 2011 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <07-Feb-2011 15:11:27 PST by rich@noir.com>
+# Time-stamp: <07-Feb-2011 18:21:34 PST by rich@noir.com>
 
 # FIXME: is there a way to force dependencies to be installed before
 # building through distutils/setuptools/distribute?  Akin to "apt-get
