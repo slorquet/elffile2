@@ -4,7 +4,7 @@
 # Copyright 2010 - 2011 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <07-Feb-2011 15:43:36 PST by rich@noir.com>
+# Time-stamp: <07-Feb-2011 21:38:25 PST by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -1519,7 +1519,7 @@ class ElfProgramHeader(StructBase):
 
     flags = None
     """
-    Flags for the segment.  Endoded using :py:class:`PF`.
+    Flags for the segment.  Encoded using :py:class:`PF`.
     """
 
     align = None
