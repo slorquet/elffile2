@@ -15,7 +15,7 @@ include testfiles
 include tests.py
 include tst.py
 
-graft doc
-prune doc/build
+graft docs
+prune docs/build
 
 graft testfiles
