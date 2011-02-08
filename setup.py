@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2010 K. Richard Pixley.
+# Copyright 2010 - 2011 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <07-Feb-2011 15:47:57 PST by rich@noir.com>
+# Time-stamp: <07-Feb-2011 18:22:38 PST by rich@noir.com>
 
 import os
 
