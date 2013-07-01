@@ -4,7 +4,7 @@
 # Copyright 2010 - 2011 K. Richard Pixley.
 # See LICENSE for details.
 #
-# Time-stamp: <07-Feb-2011 21:38:25 PST by rich@noir.com>
+# Time-stamp: <01-Jul-2013 10:41:57 PDT by rich@noir.com>
 
 """
 Elffile is a library which reads and writes `ELF format object files
@@ -349,7 +349,7 @@ ElfOsabi('ELFOSABI_STANDALONE', 255, 'Standalone (embedded) application')
 class ElfFile(StructBase):
     """
     This class corresponds to an entire ELF format file.  It is an
-    abstract base class which is not intended to be instantiated by
+    abstract base class which is not intended to be instantiated but
     rather subclassed.
 
     This abstract base class works in tight concert with it's
