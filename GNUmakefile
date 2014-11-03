@@ -128,5 +128,8 @@ supported_versions := \
 bigcheck: ${supported_versions:%=bigcheck-%}
 bigcheck-%:; $(MAKE) pyver=$* check
 
+bigbuild: ${supported_versions:%=bigbuild-%}
+bigbuild-%:; $(MAKE) pyver=$* bdist_egg
+
 bigupload: register sdist_upload ${supported_versions:%=bigupload-%} docs_upload
 bigupload-%:; $(MAKE) pyver=$* bdist_upload
