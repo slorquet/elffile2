@@ -74,7 +74,7 @@ def open(name=None, fileobj=None, map=None, block=None):
         block = map
 
     elif fileobj:
-        map = mmap.mmap(fileobj.fileno(), 0, mmap.MAP_SHARED, mmap.PROT_READ)
+        map = mmap.mmap(fileobj.fileno(), 0, access=mmap.ACCESS_READ)
 
     elif name:
         fileobj = io.open(os.path.normpath(os.path.expanduser(name)), 'rb')
