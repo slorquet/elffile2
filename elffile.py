@@ -1541,7 +1541,7 @@ class ElfProgramHeader(StructBase):
     def __repr__(self):
         return ('<{0}@{1}: type={2},'
                 ' offset={3}, vaddr={4}, paddr={5},'
-                ' filesz={6}, memsz={7}, flags={8}, align=9{}>'
+                ' filesz={6}, memsz={7}, flags={8}, align={9}>'
                 .format(self.__class__.__name__, hex(id(self)),
                         PT.bycode[self.type].name if self.type in PT.bycode else self.type,
                         self.offset, hex(self.vaddr), hex(self.paddr),
