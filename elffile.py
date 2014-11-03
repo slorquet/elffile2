@@ -471,7 +471,7 @@ class ElfFile(StructBase):
         self._unpack_sections(block, offset)
         self._unpack_section_names()
         self._unpack_program_headers(block, offset)
-        #self._unpack_segments(block, offset)
+        self._unpack_segments(block, offset)
 
         return self
 
@@ -531,6 +531,12 @@ class ElfFile(StructBase):
                 self.programHeaders.append(self.programHeaderClass().unpack_from(block,
                                                                                  offset + self.fileHeader.phoff
                                                                                  + (i * self.fileHeader.phentsize)))
+
+
+    def _unpack_segments(self, block, offset):
+        for ph in self.programHeaders:
+            ph.content = block[offset + ph.offset:offset + ph.offset + ph.filesz] # segment contents are copied
+
 
     def pack_into(self, block, offset=0):
         """
@@ -1520,6 +1526,11 @@ class ElfProgramHeader(StructBase):
     flags = None
     """
     Flags for the segment.  Encoded using :py:class:`PF`.
+    """
+
+    content = None
+    """
+    A memory block representing the contents of this section.
     """
 
     align = None
