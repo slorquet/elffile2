@@ -10,19 +10,22 @@
 import os
 import platform
 
-import distribute_setup
-distribute_setup.use_setuptools()
+#import distribute_setup 
+#distribute_setup.use_setuptools()
 
 import setuptools
 import elffile
 
-me='Sebastien Lorquet'
-memail='sebastien@lorquet.fr'
+me='K Richard Pixley, Sebastien Lorquet'
+me_email='rich@noir.com, sebastien@lorquet.fr'
+maint='Sebastien Lorquet'
+maint_email='sebastien@lorquet.fr'
+
 
 setup_requirements = [
-    'coding',
+    'coding>=0.3',
     'nose',
-    'setuptools_git >= 0.3',
+    'setuptools_git>=0.3',
     ]
 
 version_tuple = platform.python_version_tuple()
@@ -40,14 +43,13 @@ if version not in [
     ]:
     setup_requirements.append('sphinx>=1.0.5')
 
-
 setuptools.setup(
     name='elffile',
     version='0.7',
     author=me,
-    maintainer=me,
-    author_email=memail,
-    maintainer_email=memail,
+    maintainer=maint,
+    author_email=me_email,
+    maintainer_email=maint_email,
     keywords='elf object file',
     url='http://github.com/slorquet/elffile2',
     download_url='https://github.com/slorquet/elffile2/get/default.tar.bz2',
@@ -62,10 +64,11 @@ setuptools.setup(
     include_package_data=True,
     test_suite='nose.collector',
     scripts = [
-    	'objdump.py',
+        'objdump.py',
         'objcmp.py',
         ],
     requires=[
+        'coding (>=0.3)',
         ],
     provides=[
         'elffile',

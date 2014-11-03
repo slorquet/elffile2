@@ -4,6 +4,16 @@ This is a fork of the original elffile python library from rich.
 This library is unmaintained and has bugs, and I had to use it.
 So I have decided to fork it and fix it.
 
+How to build from source
+
+You need python-virtualenv
+
+Then run:
+
+    make clean
+    make ve
+    make bdist_egg
+
 What follows is the original README.
 
 --slorquet

@@ -15,8 +15,9 @@ The easiest way to do this is as follows:
     mkdir `./config.guess`
     (cd `./config.guess` && ../configure && make)
 
-You can add them to mercurial using:
-
+You can add them to git using:
     (cd `./config.guess` && make add)
 
 K. Richard Pixley, <rich@noir.com>
+Sebastien Lorquet <sebastien@lorquet.fr>
+

@@ -10,4 +10,4 @@ libstatic_LIBTOOLFLAGS = -static
 libdynamic_la_SOURCES = d.c e.c f.c
 libdynamic_LIBTOOLFLAGS = -dynamic
 
-add:; hg add `find . -name \*.[oa] -o -name \*.so\* -o -name hello`
+add:; git add `find . -name \*.[oa] -o -name \*.so\* -o -name hello`

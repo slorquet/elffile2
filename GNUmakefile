@@ -39,9 +39,7 @@ pypitest := -r https://testpypi.python.org/pypi
 ve: ${python}
 ${python}:
 	${virtualenv} --no-site-packages ${venv}
-	find ${venv} -name distribute\* -o -name setuptools\* \
-		| xargs rm -rf
-	${activate} && python distribute_setup.py
+	${activate} && pip install coding
 
 clean: clean_docs
 	rm -rf ${venvbase}* .stamp-virtualenv .stamp-apt build \
@@ -54,11 +52,11 @@ check: develop ${nose_egg}
 sdist_format := bztar
 
 .PHONY: sdist
-sdist: ${ve}
+sdist: ${python}
 	${setuppy} sdist --formats=${sdist_format}
 
 .PHONY: bdist
-bdist: ${ve}
+bdist: ${python}
 	${setuppy} bdist
 
 .PHONY: develop
@@ -74,7 +72,7 @@ bdist_upload: ${python}
 	${setuppy} bdist_egg upload ${pypitest}
 
 .PHONY: sdist_upload
-sdist_upload: ${ve}
+sdist_upload: ${python}
 	${setuppy} sdist --formats=${sdist_format} upload ${pypitest}
 
 .PHONY: register
@@ -82,7 +80,7 @@ register: ${python}
 	${setuppy} $@ ${pypitest}
 
 .PHONY: bdist_egg
-bdist_egg: ${ve}
+bdist_egg: ${python}
 	${setuppy} $@
 
 doctrigger = docs/build/html/index.html
