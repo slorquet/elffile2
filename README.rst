@@ -1,3 +1,13 @@
+Welcome to elffile2!
+
+This is a fork of the original elffile python library from rich.
+This library is unmaintained and has bugs, and I had to use it.
+So I have decided to fork it and fix it.
+
+What follows is the original README.
+
+--slorquet
+
 .. Time-stamp: <03-Jan-2011 19:55:42 PST by rich@noir.com>
 
 Welcome to elffile!

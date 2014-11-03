@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright © 2010 - 2011, 2013 K Richard Pixley
+# Copyright (c) 2014 Sebastien Lorquet
 #
 # See LICENSE for details.
 #
-# Time-stamp: <30-Jun-2013 19:46:32 PDT by rich@noir.com>
 
 import os
 import platform
@@ -16,13 +16,13 @@ distribute_setup.use_setuptools()
 import setuptools
 import elffile
 
-me='K Richard Pixley'
-memail='rich@noir.com'
+me='Sebastien Lorquet'
+memail='sebastien@lorquet.fr'
 
 setup_requirements = [
     'coding',
     'nose',
-    'setuptools_hg',
+    'setuptools_git >= 0.3',
     ]
 
 version_tuple = platform.python_version_tuple()
@@ -43,14 +43,14 @@ if version not in [
 
 setuptools.setup(
     name='elffile',
-    version='0.6',
+    version='0.7',
     author=me,
     maintainer=me,
     author_email=memail,
     maintainer_email=memail,
     keywords='elf object file',
-    url='http://bitbucket.org/krp/elffile',
-    download_url='https://bitbucket.org/krp/elffile/get/default.tar.bz2',
+    url='http://github.com/slorquet/elffile2',
+    download_url='https://github.com/slorquet/elffile2/get/default.tar.bz2',
     description='A pure python library for reading and writing ELF format object files.',
     license='MIT',
     long_description=elffile.__doc__,
